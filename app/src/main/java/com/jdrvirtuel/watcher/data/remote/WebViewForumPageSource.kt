@@ -2,6 +2,8 @@ package com.jdrvirtuel.watcher.data.remote
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebResourceError
@@ -41,7 +43,7 @@ class WebViewForumPageSource @Inject constructor(
             }
             
             result
-        } ?: FetchResult.Error("Dépassement du délai de récupération (30s)")
+        } ?: FetchResult.Error("Dépassement du délai de récupération (50s)")
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -63,6 +65,8 @@ class WebViewForumPageSource @Inject constructor(
             javaScriptEnabled = true
             domStorageEnabled = true
             userAgentString = WebViewConstants.USER_AGENT
+            useWideViewPort = true
+            loadWithOverviewMode = true
         }
 
         CookieManager.getInstance().apply {
@@ -72,31 +76,49 @@ class WebViewForumPageSource @Inject constructor(
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
-                view?.postDelayed({
-                    if (continuation.isActive) {
-                        view.evaluateJavascript(
+                val handler = Handler(Looper.getMainLooper())
+                val startTime = System.currentTimeMillis()
+
+                val pollRunnable = object : Runnable {
+                    override fun run() {
+                        if (!continuation.isActive) return
+                        val runnable = this
+
+                        view?.evaluateJavascript(
                             "(function(){return document.documentElement.outerHTML;})();",
                             object : ValueCallback<String> {
                                 override fun onReceiveValue(value: String?) {
-                                    if (continuation.isActive) {
-                                        val html = if (value != null && value != "null") {
-                                            try {
-                                                JSONTokener(value).nextValue().toString()
-                                            } catch (e: Exception) {
-                                                value
-                                            }
-                                        } else {
-                                            ""
+                                    if (!continuation.isActive) return
+
+                                    val html = if (value != null && value != "null") {
+                                        try {
+                                            JSONTokener(value).nextValue().toString()
+                                        } catch (e: Exception) {
+                                            value
                                         }
-                                        val result = classifyHtml(html)
-                                        continuation.resume(result)
+                                    } else {
+                                        ""
+                                    }
+
+                                    if (html.contains(WebViewConstants.SUCCESS_MARKER)) {
+                                        continuation.resume(FetchResult.Success(html))
                                         cleanup()
+                                        return
+                                    }
+
+                                    val elapsed = System.currentTimeMillis() - startTime
+                                    if (elapsed >= WebViewConstants.MAX_POLLING_MS) {
+                                        continuation.resume(classifyHtml(html))
+                                        cleanup()
+                                    } else {
+                                        handler.postDelayed(runnable, WebViewConstants.POLLING_INTERVAL_MS)
                                     }
                                 }
                             }
                         )
                     }
-                }, WebViewConstants.PAGE_SETTLE_DELAY_MS)
+                }
+                handler.post(pollRunnable)
             }
 
             override fun onReceivedError(
@@ -121,6 +143,7 @@ class WebViewForumPageSource @Inject constructor(
             html.contains("cf-turnstile") || 
             html.contains("challenge-platform") || 
             html.contains("Just a moment") || 
+            html.contains("Un instant") ||
             html.contains("cf_chl") -> FetchResult.ChallengeRequired
             else -> FetchResult.Error("Structure de page inconnue (marqueur 'topictitle' absent)")
         }

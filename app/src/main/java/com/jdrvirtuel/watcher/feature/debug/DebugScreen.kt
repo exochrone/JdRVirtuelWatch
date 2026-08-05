@@ -3,6 +3,9 @@ package com.jdrvirtuel.watcher.feature.debug
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.webkit.CookieManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,10 +49,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
+import com.jdrvirtuel.watcher.data.remote.WebViewConstants
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.Topic
 import java.text.SimpleDateFormat
@@ -286,6 +291,58 @@ fun NetworkDebugSection(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.debug_copy_html))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.md))
+        
+        var showVisibleWebView by remember { mutableStateOf(false) }
+        
+        Text(
+            text = "En cas de blocage persistant, ce bouton permet de renouveler manuellement le cookie d'accès en cochant la case de vérification Cloudflare.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(bottom = Dimens.xs)
+        )
+        Button(
+            onClick = { showVisibleWebView = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Valider le challenge Cloudflare")
+        }
+
+        if (showVisibleWebView) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(700.dp)
+                    .padding(vertical = Dimens.sm)
+            ) {
+                AndroidView(
+                    factory = { context ->
+                        WebView(context).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.userAgentString = WebViewConstants.USER_AGENT
+                            settings.useWideViewPort = true
+                            settings.loadWithOverviewMode = true
+                            
+                            CookieManager.getInstance().setAcceptCookie(true)
+                            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                            
+                            webViewClient = object : WebViewClient() {
+                                override fun onPageFinished(view: WebView?, url: String?) {
+                                    view?.evaluateJavascript("(function(){return document.documentElement.outerHTML;})();") { value ->
+                                        if (value != null && value.contains(WebViewConstants.SUCCESS_MARKER)) {
+                                            CookieManager.getInstance().flush()
+                                        }
+                                    }
+                                }
+                            }
+                            loadUrl("https://www.jdrvirtuel.com/viewforum.php?f=15")
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
         
