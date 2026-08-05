@@ -75,7 +75,12 @@ class WebViewForumPageSource @Inject constructor(
         }
 
         webView.webViewClient = object : WebViewClient() {
+            private var pollingStarted = false
+
             override fun onPageFinished(view: WebView?, url: String?) {
+                if (pollingStarted) return
+                pollingStarted = true
+
                 val handler = Handler(Looper.getMainLooper())
                 val startTime = System.currentTimeMillis()
 
@@ -102,14 +107,14 @@ class WebViewForumPageSource @Inject constructor(
 
                                     if (html.contains(WebViewConstants.SUCCESS_MARKER)) {
                                         continuation.resume(FetchResult.Success(html))
-                                        cleanup()
+                                        handler.post { cleanup() }
                                         return
                                     }
 
                                     val elapsed = System.currentTimeMillis() - startTime
                                     if (elapsed >= WebViewConstants.MAX_POLLING_MS) {
                                         continuation.resume(classifyHtml(html))
-                                        cleanup()
+                                        handler.post { cleanup() }
                                     } else {
                                         handler.postDelayed(runnable, WebViewConstants.POLLING_INTERVAL_MS)
                                     }
@@ -128,7 +133,7 @@ class WebViewForumPageSource @Inject constructor(
             ) {
                 if (request?.isForMainFrame == true && continuation.isActive) {
                     continuation.resume(FetchResult.Error(error?.description?.toString() ?: "Erreur réseau inconnue"))
-                    cleanup()
+                    Handler(Looper.getMainLooper()).post { cleanup() }
                 }
             }
         }
