@@ -1,5 +1,10 @@
 package com.jdrvirtuel.watcher.feature.debug
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,13 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,8 +39,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,11 +64,18 @@ fun DebugScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 DebugEffect.NavigateBack -> onNavigateBack()
+                is DebugEffect.CopyToClipboard -> {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("HTML Content", effect.text)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "HTML copié", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -104,6 +124,13 @@ fun DebugScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
+                item {
+                    NetworkDebugSection(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent
+                    )
+                }
+
                 item {
                     Text(
                         text = stringResource(R.string.debug_forums_section),
@@ -172,6 +199,97 @@ fun DebugScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun NetworkDebugSection(
+    uiState: DebugUiState,
+    onEvent: (DebugEvent) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.debug_network_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = Dimens.sm)
+        )
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onEvent(DebugEvent.FetchForumHtml(15)) },
+                enabled = !uiState.isNetworkLoading,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_load_forum_15))
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.FetchForumHtml(16)) },
+                enabled = !uiState.isNetworkLoading,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_load_forum_16))
+            }
+        }
+
+        if (uiState.isNetworkLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Dimens.md),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        uiState.fetchResult?.let { result ->
+            Text(
+                text = result,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    result == "Succès" -> MaterialTheme.colorScheme.primary
+                    result == "Vérification requise" -> MaterialTheme.colorScheme.error
+                    result.startsWith("Erreur") -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
+                modifier = Modifier.padding(vertical = Dimens.sm)
+            )
+        }
+
+        uiState.htmlContent?.let { html ->
+            Text(
+                text = stringResource(R.string.debug_html_size, uiState.htmlSize),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(vertical = Dimens.sm)
+            ) {
+                SelectionContainer {
+                    val scrollState = rememberScrollState()
+                    Text(
+                        text = html.take(2000),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(Dimens.sm)
+                            .verticalScroll(scrollState),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                    )
+                }
+            }
+            Button(
+                onClick = { onEvent(DebugEvent.CopyToClipboard(html)) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.debug_copy_html))
+            }
+        }
+        
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
     }
 }
 

@@ -26,6 +26,16 @@
     <string name="debug_never_synced">Jamais</string>
     <string name="debug_total_topics">Total sujets : %1$d</string>
 
+    <!-- Debug Network -->
+    <string name="debug_network_section">Réseau</string>
+    <string name="debug_load_forum_15">Charger le forum 15</string>
+    <string name="debug_load_forum_16">Charger le forum 16</string>
+    <string name="debug_fetch_success">Succès</string>
+    <string name="debug_fetch_challenge">Vérification requise</string>
+    <string name="debug_fetch_error">Erreur : %1$s</string>
+    <string name="debug_html_size">%1$d octets</string>
+    <string name="debug_copy_html">Copier le HTML</string>
+
     <!-- Accessibility -->
     <string name="back">Retour</string>
 </resources>
