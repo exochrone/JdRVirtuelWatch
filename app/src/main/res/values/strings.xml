@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">JdRVirtuelWatcher</string>
+    <string name="home_title">JdRVirtuelWatcher</string>
+    <string name="home_construction">Application en cours de construction</string>
+
+    <!-- Forums -->
+    <string name="forum_oneshots">Oneshots</string>
+    <string name="forum_campagnes">Campagnes</string>
+
+    <!-- Debug -->
+    <string name="debug_title">Debug</string>
+    <string name="debug_forums_section">Forums</string>
+    <string name="debug_topics_section">Sujets</string>
+    <string name="debug_no_topics">Aucun sujet en base</string>
+    <string name="debug_insert_test_topic">Insérer un sujet de test</string>
+    <string name="debug_clear_topics">Vider les sujets</string>
+    <string name="debug_clear_topics_confirm_title">Confirmer la purge</string>
+    <string name="debug_clear_topics_confirm_message">Voulez-vous vraiment supprimer tous les sujets ?</string>
+    <string name="debug_confirm">Confirmer</string>
+    <string name="debug_cancel">Annuler</string>
+    <string name="debug_topic_id">ID : %1$d</string>
+    <string name="debug_topic_replies">Réponses : %1$d</string>
+    <string name="debug_forum_not_bootstrapped">Non amorcé</string>
+    <string name="debug_forum_bootstrapped">Amorcé</string>
+    <string name="debug_last_sync">Dernière sync : %1$s</string>
+    <string name="debug_never_synced">Jamais</string>
+    <string name="debug_total_topics">Total sujets : %1$d</string>
+
+    <!-- Accessibility -->
+    <string name="back">Retour</string>
+</resources>
