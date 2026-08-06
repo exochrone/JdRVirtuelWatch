@@ -45,6 +45,23 @@
     <string name="debug_topic_last_post">Dernier message par %1$s le %2$s</string>
     <string name="debug_topic_full">COMPLET</string>
 
+    <!-- Debug Synchronisation -->
+    <string name="debug_sync_section">Synchronisation</string>
+    <string name="debug_sync_f15">Synchroniser le forum 15</string>
+    <string name="debug_sync_f16">Synchroniser le forum 16</string>
+    <string name="debug_sync_all">Tout synchroniser</string>
+    <string name="debug_delete_random">Supprimer un sujet au hasard</string>
+    <string name="debug_decrement_replies">Décrémenter le compteur de réponses</string>
+    <string name="debug_reset_bootstrap">Réinitialiser l\'amorçage</string>
+    <string name="debug_sync_outcome_title">Résultat de la synchronisation (%1$d)</string>
+    <string name="debug_sync_status">Statut : %1$s</string>
+    <string name="debug_sync_counts">Analysés : %1$d | Insérés : %2$d | Mis à jour : %3$d | Purgés : %4$d</string>
+    <string name="debug_sync_new_topics">Nouveaux sujets (%1$d) :</string>
+    <string name="debug_sync_new_replies">Nouvelles réponses (%1$d) :</string>
+    <string name="debug_sync_success">SUCCÈS</string>
+    <string name="debug_sync_challenge">CHALLENGE</string>
+    <string name="debug_sync_error">ERREUR</string>
+
     <!-- Accessibility -->
     <string name="back">Retour</string>
 </resources>

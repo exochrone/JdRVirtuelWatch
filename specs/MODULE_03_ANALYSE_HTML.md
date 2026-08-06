@@ -39,6 +39,25 @@ Chaque sujet est une balise `<li class="row ...">` contenant un `<dl class="row-
 
 Marqueur : la classe `sticky` sur le `<li>`.
 
+### Annonce globale, à ignorer également
+
+Une annonce publiée dans un autre forum peut être affichée en tête de la liste :
+
+```html
+<li class="row bg1 global-announce">
+  <dl class="row-item global_read">
+    <dt title="Aucun message non lu">
+      <div class="list-inner">
+        <a href=".../viewtopic.php?f=2&t=40356" class="topictitle">Problème sur le forum...</a>
+```
+
+Deux pièges. La classe est `global-announce`, avec un tiret : un test portant sur des
+noms de classe entiers ne la capte pas, il faut un test de sous-chaîne sur l'attribut
+`class` complet. Et son URL porte un `f` différent de celui du forum consulté, ici
+`f=2`, ce qui confirme qu'elle n'appartient pas à la section.
+
+Ces lignes sont comptées dans `skippedSticky` au même titre que les sujets épinglés.
+
 ### Sujet ordinaire
 
 ```html
@@ -78,7 +97,7 @@ l'auteur. C'est le seul marqueur disponible.
 | Donnée | Sélecteur ou méthode |
 |---|---|
 | Lignes de sujet | `ul.topiclist.topics li.row`, avec repli sur `li.row` si le premier ne retourne rien |
-| Sujet épinglé | classe `sticky`, `announce` ou `global` sur le `<li>` |
+| Sujet épinglé ou annonce | attribut `class` du `<li>` contenant `sticky`, `announce` ou `global`, en test de sous-chaîne insensible à la casse |
 | Titre | texte de `a.topictitle` |
 | URL | attribut `href` de `a.topictitle` |
 | Identifiant | expression régulière `[?&]t=(\d+)` appliquée à l'URL |
@@ -235,6 +254,7 @@ Les tests s'appuient sur `viewforum_f15.html`, chargé depuis les ressources de 
 | Test | Vérification |
 |---|---|
 | `parse_ignoreLesSujetsEpingles` | Aucun sujet retourné ne porte un identifiant de sujet épinglé, `skippedSticky` est supérieur ou égal à 1 |
+| `parse_ignoreLesAnnoncesGlobales` | Le sujet 40356, « Problème sur le forum », est absent du résultat et compté dans `skippedSticky` |
 | `parse_extraitLIdentifiantDepuisLUrl` | Le sujet 41234 est présent |
 | `parse_extraitLeTitre` | Le titre du sujet 41234 est `[Friponnes RPG][Discord][12/08][1/3 places]` |
 | `parse_extraitLAuteurEtLaDateDeCreation` | Auteur `Etienneb`, date correspondant au 24 juillet 2026 à 16:26 heure de Paris |

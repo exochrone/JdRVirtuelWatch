@@ -7,10 +7,13 @@ import com.jdrvirtuel.watcher.data.parser.TopicListParser
 import com.jdrvirtuel.watcher.domain.model.FetchResult
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.ParseResult
+import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.Topic
 import com.jdrvirtuel.watcher.domain.repository.ForumPageSource
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
+import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
+import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -31,6 +34,8 @@ class DebugViewModel @Inject constructor(
     private val topicRepository: TopicRepository,
     private val forumPageSource: ForumPageSource,
     private val parser: TopicListParser,
+    private val syncForumUseCase: SyncForumUseCase,
+    private val syncAllForumsUseCase: SyncAllForumsUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -39,6 +44,7 @@ class DebugViewModel @Inject constructor(
 
     private val _networkState = MutableStateFlow(NetworkDebugState())
     private val _parserState = MutableStateFlow(ParserDebugState())
+    private val _syncState = MutableStateFlow(SyncDebugState())
 
     val uiState: StateFlow<DebugUiState> = combine(
         forumRepository.observeForums(),
@@ -46,7 +52,8 @@ class DebugViewModel @Inject constructor(
         topicRepository.observeTopics(16),
         topicRepository.observeTotalCount(),
         _networkState,
-        _parserState
+        _parserState,
+        _syncState
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -54,6 +61,7 @@ class DebugViewModel @Inject constructor(
         val totalCount = array[3] as Int
         val network = array[4] as NetworkDebugState
         val parserState = array[5] as ParserDebugState
+        val sync = array[6] as SyncDebugState
 
         DebugUiState(
             forums = forums,
@@ -63,7 +71,9 @@ class DebugViewModel @Inject constructor(
             fetchResult = network.resultMessage,
             htmlContent = network.html,
             htmlSize = network.html?.length ?: 0,
-            parseResult = parserState.result
+            parseResult = parserState.result,
+            isSyncing = sync.isSyncing,
+            lastSyncOutcome = sync.lastOutcome
         )
     }.stateIn(
         scope = viewModelScope,
@@ -88,6 +98,62 @@ class DebugViewModel @Inject constructor(
             }
             DebugEvent.ParseTestFile -> parseTestFile()
             DebugEvent.ParseLastLoadedHtml -> parseLastLoadedHtml()
+            is DebugEvent.SyncForum -> syncForum(event.forumId)
+            DebugEvent.SyncAll -> syncAll()
+            DebugEvent.DeleteRandomTopic -> deleteRandomTopic()
+            DebugEvent.DecrementReplyCount -> decrementReplyCount()
+            DebugEvent.ResetBootstrap -> resetBootstrap()
+        }
+    }
+
+    private fun syncForum(forumId: Int) {
+        if (_syncState.value.isSyncing) return
+        viewModelScope.launch {
+            _syncState.update { it.copy(isSyncing = true) }
+            val outcome = syncForumUseCase(forumId)
+            _syncState.update { it.copy(isSyncing = false, lastOutcome = outcome) }
+        }
+    }
+
+    private fun syncAll() {
+        if (_syncState.value.isSyncing) return
+        viewModelScope.launch {
+            _syncState.update { it.copy(isSyncing = true) }
+            val outcomes = syncAllForumsUseCase()
+            _syncState.update { it.copy(isSyncing = false, lastOutcome = outcomes.lastOrNull()) }
+        }
+    }
+
+    private fun deleteRandomTopic() {
+        viewModelScope.launch {
+            val topics15 = topicRepository.getTopics(15)
+            val topics16 = topicRepository.getTopics(16)
+            val all = topics15 + topics16
+            if (all.isNotEmpty()) {
+                val random = all.random()
+                topicRepository.deleteById(random.id)
+            }
+        }
+    }
+
+    private fun decrementReplyCount() {
+        viewModelScope.launch {
+            val topics15 = topicRepository.getTopics(15)
+            val topics16 = topicRepository.getTopics(16)
+            val watched = (topics15 + topics16).filter { it.isWatched }
+            if (watched.isNotEmpty()) {
+                val random = watched.random()
+                if (random.replyCount > 0) {
+                    topicRepository.upsertAll(listOf(random.copy(replyCount = random.replyCount - 1)))
+                }
+            }
+        }
+    }
+
+    private fun resetBootstrap() {
+        viewModelScope.launch {
+            forumRepository.resetBootstrap(15)
+            forumRepository.resetBootstrap(16)
         }
     }
 
@@ -147,6 +213,11 @@ class DebugViewModel @Inject constructor(
 
     private data class ParserDebugState(
         val result: ParseResult? = null
+    )
+
+    private data class SyncDebugState(
+        val isSyncing: Boolean = false,
+        val lastOutcome: SyncOutcome? = null
     )
 
     private fun insertTestTopic() {

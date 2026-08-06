@@ -2,6 +2,7 @@ package com.jdrvirtuel.watcher.feature.debug
 
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.ParseResult
+import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.Topic
 
 data class DebugUiState(
@@ -18,7 +19,11 @@ data class DebugUiState(
     val htmlSize: Int = 0,
 
     // Parser Debug
-    val parseResult: ParseResult? = null
+    val parseResult: ParseResult? = null,
+
+    // Sync Debug
+    val isSyncing: Boolean = false,
+    val lastSyncOutcome: SyncOutcome? = null
 )
 
 sealed interface DebugEvent {
@@ -33,6 +38,13 @@ sealed interface DebugEvent {
     // Parser Debug
     data object ParseTestFile : DebugEvent
     data object ParseLastLoadedHtml : DebugEvent
+
+    // Sync Debug
+    data class SyncForum(val forumId: Int) : DebugEvent
+    data object SyncAll : DebugEvent
+    data object DeleteRandomTopic : DebugEvent
+    data object DecrementReplyCount : DebugEvent
+    data object ResetBootstrap : DebugEvent
 }
 
 sealed interface DebugEffect {

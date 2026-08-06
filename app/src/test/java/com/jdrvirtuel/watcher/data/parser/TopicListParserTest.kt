@@ -31,6 +31,9 @@ class TopicListParserTest {
         assertTrue("Devrait avoir ignoré des épinglés", result.skippedSticky > 0)
         // Vérifier qu'aucun sujet retourné n'est un sticky connu (ex: 32440 dans la spec)
         assertFalse(result.topics.any { it.id == 32440 })
+        
+        // Vérifier l'exclusion spécifique de l'annonce globale 40356
+        assertFalse("Le sujet 40356 (annonce globale) devrait être exclu", result.topics.any { it.id == 40356 })
     }
 
     @Test

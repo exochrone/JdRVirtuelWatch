@@ -38,4 +38,9 @@ class ForumRepositoryImpl @Inject constructor(
         val forum = forumDao.getById(id) ?: return
         forumDao.upsert(forum.copy(isBootstrapped = true))
     }
+
+    override suspend fun resetBootstrap(id: Int) {
+        val forum = forumDao.getById(id) ?: return
+        forumDao.upsert(forum.copy(isBootstrapped = false, lastSyncAt = null, lastSyncSuccess = false, lastSyncError = null))
+    }
 }

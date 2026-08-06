@@ -32,8 +32,12 @@ class TopicListParser @Inject constructor(
         var skippedInvalid = 0
 
         for (row in topicRows) {
-            // Sujet épinglé ?
-            if (row.hasClass("sticky") || row.hasClass("announce") || row.hasClass("global")) {
+            // Sujet épinglé ? (sticky, announce ou global)
+            val className = row.className()
+            if (className.contains("sticky", ignoreCase = true) ||
+                className.contains("announce", ignoreCase = true) ||
+                className.contains("global", ignoreCase = true)
+            ) {
                 skippedSticky++
                 continue
             }

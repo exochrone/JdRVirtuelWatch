@@ -9,4 +9,5 @@ interface ForumRepository {
     suspend fun getForum(id: Int): Forum?
     suspend fun updateSyncState(id: Int, success: Boolean, at: Long, error: String?)
     suspend fun markBootstrapped(id: Int)
+    suspend fun resetBootstrap(id: Int)
 }

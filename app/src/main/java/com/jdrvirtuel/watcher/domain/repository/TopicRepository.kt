@@ -11,7 +11,7 @@ interface TopicRepository {
     suspend fun setWatched(id: Int, watched: Boolean)
     suspend fun setRead(id: Int, read: Boolean)
     suspend fun deleteById(id: Int)
-    suspend fun deleteStale(threshold: Long)
+    suspend fun deleteStale(threshold: Long): Int
     fun observeUnreadCount(forumId: Int): Flow<Int>
     
     // For debug

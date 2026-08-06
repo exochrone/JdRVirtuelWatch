@@ -57,6 +57,8 @@ import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import com.jdrvirtuel.watcher.data.remote.WebViewConstants
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.ParsedTopic
+import com.jdrvirtuel.watcher.domain.model.SyncOutcome
+import com.jdrvirtuel.watcher.domain.model.SyncStatus
 import com.jdrvirtuel.watcher.domain.model.Topic
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -130,6 +132,13 @@ fun DebugScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
+                item {
+                    SyncDebugSection(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent
+                    )
+                }
+
                 item {
                     NetworkDebugSection(
                         uiState = uiState,
@@ -212,6 +221,159 @@ fun DebugScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun SyncDebugSection(
+    uiState: DebugUiState,
+    onEvent: (DebugEvent) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.debug_sync_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = Dimens.sm)
+        )
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onEvent(DebugEvent.SyncForum(15)) },
+                enabled = !uiState.isSyncing,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Sync F15")
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.SyncForum(16)) },
+                enabled = !uiState.isSyncing,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Sync F16")
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.SyncAll) },
+                enabled = !uiState.isSyncing,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Tout Sync")
+            }
+        }
+
+        if (uiState.isSyncing) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Dimens.md),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        uiState.lastSyncOutcome?.let { outcome ->
+            SyncOutcomeCard(outcome)
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.sm))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onEvent(DebugEvent.DeleteRandomTopic) },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_delete_random))
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.DecrementReplyCount) },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_decrement_replies))
+            }
+        }
+
+        Button(
+            onClick = { onEvent(DebugEvent.ResetBootstrap) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.debug_reset_bootstrap))
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
+    }
+}
+
+@Composable
+fun SyncOutcomeCard(outcome: SyncOutcome) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.sm)
+    ) {
+        Column(modifier = Modifier.padding(Dimens.sm)) {
+            Text(
+                text = stringResource(R.string.debug_sync_outcome_title, outcome.forumId),
+                style = MaterialTheme.typography.titleSmall
+            )
+            val statusRes = when (outcome.status) {
+                SyncStatus.SUCCESS -> R.string.debug_sync_success
+                SyncStatus.CHALLENGE_REQUIRED -> R.string.debug_sync_challenge
+                SyncStatus.ERROR -> R.string.debug_sync_error
+            }
+            Text(
+                text = stringResource(R.string.debug_sync_status, stringResource(statusRes)),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = when (outcome.status) {
+                    SyncStatus.SUCCESS -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.error
+                }
+            )
+            if (outcome.errorMessage != null) {
+                Text(
+                    text = outcome.errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            Text(
+                text = stringResource(
+                    R.string.debug_sync_counts,
+                    outcome.parsedCount,
+                    outcome.insertedCount,
+                    outcome.updatedCount,
+                    outcome.purgedCount
+                ),
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            if (outcome.newTopics.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.debug_sync_new_topics, outcome.newTopics.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = Dimens.xs)
+                )
+                outcome.newTopics.forEach { topic ->
+                    Text(text = "• ${topic.title}", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
+            if (outcome.newReplies.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.debug_sync_new_replies, outcome.newReplies.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = Dimens.xs)
+                )
+                outcome.newReplies.forEach { topic ->
+                    Text(text = "• ${topic.title}", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
     }
 }
 

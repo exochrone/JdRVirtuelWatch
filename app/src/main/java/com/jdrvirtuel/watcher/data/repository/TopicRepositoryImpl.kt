@@ -41,8 +41,8 @@ class TopicRepositoryImpl @Inject constructor(
         topicDao.deleteById(id)
     }
 
-    override suspend fun deleteStale(threshold: Long) {
-        topicDao.deleteStale(threshold)
+    override suspend fun deleteStale(threshold: Long): Int {
+        return topicDao.deleteStale(threshold)
     }
 
     override fun observeUnreadCount(forumId: Int): Flow<Int> =
