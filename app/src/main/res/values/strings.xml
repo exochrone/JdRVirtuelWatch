@@ -36,6 +36,15 @@
     <string name="debug_html_size">%1$d octets</string>
     <string name="debug_copy_html">Copier le HTML</string>
 
+    <!-- Debug Analyse -->
+    <string name="debug_parser_section">Analyse HTML</string>
+    <string name="debug_parse_test_file">Analyser le fichier de test</string>
+    <string name="debug_parse_last_html">Analyser le dernier HTML chargé</string>
+    <string name="debug_parse_result">Résultat : %1$d sujets, %2$d épinglés ignorés, %3$d invalides</string>
+    <string name="debug_topic_author">Par %1$s le %2$s</string>
+    <string name="debug_topic_last_post">Dernier message par %1$s le %2$s</string>
+    <string name="debug_topic_full">COMPLET</string>
+
     <!-- Accessibility -->
     <string name="back">Retour</string>
 </resources>

@@ -56,6 +56,7 @@ import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import com.jdrvirtuel.watcher.data.remote.WebViewConstants
 import com.jdrvirtuel.watcher.domain.model.Forum
+import com.jdrvirtuel.watcher.domain.model.ParsedTopic
 import com.jdrvirtuel.watcher.domain.model.Topic
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -137,6 +138,13 @@ fun DebugScreen(
                 }
 
                 item {
+                    ParserDebugSection(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent
+                    )
+                }
+
+                item {
                     Text(
                         text = stringResource(R.string.debug_forums_section),
                         style = MaterialTheme.typography.titleMedium,
@@ -204,6 +212,103 @@ fun DebugScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun ParserDebugSection(
+    uiState: DebugUiState,
+    onEvent: (DebugEvent) -> Unit
+) {
+    val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()) }
+
+    Column {
+        Text(
+            text = stringResource(R.string.debug_parser_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = Dimens.sm)
+        )
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onEvent(DebugEvent.ParseTestFile) },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_parse_test_file))
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.ParseLastLoadedHtml) },
+                enabled = uiState.htmlContent != null,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_parse_last_html))
+            }
+        }
+
+        uiState.parseResult?.let { result ->
+            Text(
+                text = stringResource(
+                    R.string.debug_parse_result,
+                    result.topics.size,
+                    result.skippedSticky,
+                    result.skippedInvalid
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = Dimens.sm)
+            )
+
+            result.topics.forEach { parsedTopic ->
+                ParsedTopicDebugItem(parsedTopic, dateFormat)
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
+    }
+}
+
+@Composable
+fun ParsedTopicDebugItem(topic: ParsedTopic, dateFormat: SimpleDateFormat) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Dimens.xs)
+    ) {
+        Column(modifier = Modifier.padding(Dimens.sm)) {
+            Text(
+                text = topic.title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "ID: ${topic.id} | Réponses: ${topic.replyCount}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = stringResource(
+                    R.string.debug_topic_author,
+                    topic.author,
+                    dateFormat.format(Date(topic.createdAt))
+                ),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = stringResource(
+                    R.string.debug_topic_last_post,
+                    topic.lastPostAuthor,
+                    dateFormat.format(Date(topic.lastPostAt))
+                ),
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (topic.isFull) {
+                androidx.compose.material3.AssistChip(
+                    onClick = { },
+                    label = { Text(stringResource(R.string.debug_topic_full)) },
+                    modifier = Modifier.padding(top = Dimens.xs)
+                )
+            }
+        }
     }
 }
 

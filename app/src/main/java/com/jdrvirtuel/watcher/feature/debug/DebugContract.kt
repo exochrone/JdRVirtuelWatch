@@ -1,6 +1,7 @@
 package com.jdrvirtuel.watcher.feature.debug
 
 import com.jdrvirtuel.watcher.domain.model.Forum
+import com.jdrvirtuel.watcher.domain.model.ParseResult
 import com.jdrvirtuel.watcher.domain.model.Topic
 
 data class DebugUiState(
@@ -14,7 +15,10 @@ data class DebugUiState(
     val isNetworkLoading: Boolean = false,
     val fetchResult: String? = null,
     val htmlContent: String? = null,
-    val htmlSize: Int = 0
+    val htmlSize: Int = 0,
+
+    // Parser Debug
+    val parseResult: ParseResult? = null
 )
 
 sealed interface DebugEvent {
@@ -25,6 +29,10 @@ sealed interface DebugEvent {
     // Network Debug
     data class FetchForumHtml(val forumId: Int) : DebugEvent
     data class CopyToClipboard(val text: String) : DebugEvent
+
+    // Parser Debug
+    data object ParseTestFile : DebugEvent
+    data object ParseLastLoadedHtml : DebugEvent
 }
 
 sealed interface DebugEffect {

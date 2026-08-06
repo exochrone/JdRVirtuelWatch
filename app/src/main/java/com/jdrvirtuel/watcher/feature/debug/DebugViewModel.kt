@@ -1,13 +1,18 @@
 package com.jdrvirtuel.watcher.feature.debug
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrvirtuel.watcher.data.parser.TopicListParser
 import com.jdrvirtuel.watcher.domain.model.FetchResult
+import com.jdrvirtuel.watcher.domain.model.Forum
+import com.jdrvirtuel.watcher.domain.model.ParseResult
 import com.jdrvirtuel.watcher.domain.model.Topic
 import com.jdrvirtuel.watcher.domain.repository.ForumPageSource
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,21 +29,32 @@ import kotlin.random.Random
 class DebugViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
-    private val forumPageSource: ForumPageSource
+    private val forumPageSource: ForumPageSource,
+    private val parser: TopicListParser,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _effect = Channel<DebugEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
     private val _networkState = MutableStateFlow(NetworkDebugState())
+    private val _parserState = MutableStateFlow(ParserDebugState())
 
     val uiState: StateFlow<DebugUiState> = combine(
         forumRepository.observeForums(),
         topicRepository.observeTopics(15),
         topicRepository.observeTopics(16),
         topicRepository.observeTotalCount(),
-        _networkState
-    ) { forums, topics15, topics16, totalCount, network ->
+        _networkState,
+        _parserState
+    ) { array ->
+        val forums = array[0] as List<Forum>
+        val topics15 = array[1] as List<Topic>
+        val topics16 = array[2] as List<Topic>
+        val totalCount = array[3] as Int
+        val network = array[4] as NetworkDebugState
+        val parserState = array[5] as ParserDebugState
+
         DebugUiState(
             forums = forums,
             topicsByForum = mapOf(15 to topics15, 16 to topics16),
@@ -46,7 +62,8 @@ class DebugViewModel @Inject constructor(
             isNetworkLoading = network.isLoading,
             fetchResult = network.resultMessage,
             htmlContent = network.html,
-            htmlSize = network.html?.length ?: 0
+            htmlSize = network.html?.length ?: 0,
+            parseResult = parserState.result
         )
     }.stateIn(
         scope = viewModelScope,
@@ -69,6 +86,28 @@ class DebugViewModel @Inject constructor(
                     _effect.send(DebugEffect.CopyToClipboard(event.text))
                 }
             }
+            DebugEvent.ParseTestFile -> parseTestFile()
+            DebugEvent.ParseLastLoadedHtml -> parseLastLoadedHtml()
+        }
+    }
+
+    private fun parseTestFile() {
+        viewModelScope.launch {
+            try {
+                val html = context.assets.open("viewforum_f15.html").bufferedReader().use { it.readText() }
+                val result = parser.parse(html)
+                _parserState.update { it.copy(result = result) }
+            } catch (e: Exception) {
+                // Silently fail or log in debug
+            }
+        }
+    }
+
+    private fun parseLastLoadedHtml() {
+        val html = _networkState.value.html
+        if (html != null) {
+            val result = parser.parse(html)
+            _parserState.update { it.copy(result = result) }
         }
     }
 
@@ -104,6 +143,10 @@ class DebugViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val resultMessage: String? = null,
         val html: String? = null
+    )
+
+    private data class ParserDebugState(
+        val result: ParseResult? = null
     )
 
     private fun insertTestTopic() {
