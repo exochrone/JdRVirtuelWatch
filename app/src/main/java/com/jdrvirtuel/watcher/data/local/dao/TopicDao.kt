@@ -32,8 +32,8 @@ interface TopicDao {
     @Query("DELETE FROM topics WHERE id = :id")
     suspend fun deleteById(id: Int): Int
 
-    @Query("DELETE FROM topics WHERE lastSeenAt < :threshold AND isWatched = 0")
-    suspend fun deleteStale(threshold: Long): Int
+    @Query("DELETE FROM topics WHERE forumId = :forumId AND lastSeenAt < :threshold AND isWatched = 0")
+    suspend fun deleteStale(forumId: Int, threshold: Long): Int
 
     @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId AND isRead = 0 AND isHidden = 0")
     fun countUnread(forumId: Int): Flow<Int>

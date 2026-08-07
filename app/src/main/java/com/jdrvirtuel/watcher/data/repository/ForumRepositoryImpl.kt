@@ -23,11 +23,11 @@ class ForumRepositoryImpl @Inject constructor(
     override suspend fun getForum(id: Int): Forum? =
         forumDao.getById(id)?.toDomain()
 
-    override suspend fun updateSyncState(id: Int, success: Boolean, at: Long, error: String?) {
+    override suspend fun updateSyncState(id: Int, success: Boolean, at: Long?, error: String?) {
         val forum = forumDao.getById(id) ?: return
         forumDao.upsert(
             forum.copy(
-                lastSyncAt = at,
+                lastSyncAt = at ?: forum.lastSyncAt,
                 lastSyncSuccess = success,
                 lastSyncError = error
             )

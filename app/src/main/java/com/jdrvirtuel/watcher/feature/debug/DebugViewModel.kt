@@ -85,6 +85,8 @@ class DebugViewModel @Inject constructor(
             parseResult = parserState.result,
             isSyncing = sync.isSyncing,
             lastSyncOutcome = sync.lastOutcome,
+            lastDeletedTopicInfo = sync.lastDeletedTopicInfo,
+            selectedTopicId = sync.selectedTopicId,
             isBenchRunning = bench.isRunning,
             benchIntervalMinutes = bench.intervalMinutes,
             benchLogs = bench.logs
@@ -115,6 +117,12 @@ class DebugViewModel @Inject constructor(
             is DebugEvent.SyncForum -> syncForum(event.forumId)
             DebugEvent.SyncAll -> syncAll()
             DebugEvent.DeleteRandomTopic -> deleteRandomTopic()
+            is DebugEvent.SelectTopic -> {
+                _syncState.update { it.copy(selectedTopicId = event.topicId) }
+            }
+            DebugEvent.ToggleWatched -> toggleWatched()
+            DebugEvent.ToggleHidden -> toggleHidden()
+            DebugEvent.ToggleRead -> toggleRead()
             DebugEvent.DecrementReplyCount -> decrementReplyCount()
             DebugEvent.ResetBootstrap -> resetBootstrap()
             is DebugEvent.UpdateBenchInterval -> {
@@ -220,20 +228,49 @@ class DebugViewModel @Inject constructor(
             if (all.isNotEmpty()) {
                 val random = all.random()
                 topicRepository.deleteById(random.id)
+                _syncState.update { it.copy(lastDeletedTopicInfo = "${random.id} - ${random.title}") }
             }
+        }
+    }
+
+    private fun toggleWatched() {
+        viewModelScope.launch {
+            val id = _syncState.value.selectedTopicId ?: return@launch
+            val topics15 = topicRepository.getTopics(15)
+            val topics16 = topicRepository.getTopics(16)
+            val topic = (topics15 + topics16).find { it.id == id } ?: return@launch
+            topicRepository.setWatched(id, !topic.isWatched)
+        }
+    }
+
+    private fun toggleHidden() {
+        viewModelScope.launch {
+            val id = _syncState.value.selectedTopicId ?: return@launch
+            val topics15 = topicRepository.getTopics(15)
+            val topics16 = topicRepository.getTopics(16)
+            val topic = (topics15 + topics16).find { it.id == id } ?: return@launch
+            topicRepository.setHidden(id, !topic.isHidden)
+        }
+    }
+
+    private fun toggleRead() {
+        viewModelScope.launch {
+            val id = _syncState.value.selectedTopicId ?: return@launch
+            val topics15 = topicRepository.getTopics(15)
+            val topics16 = topicRepository.getTopics(16)
+            val topic = (topics15 + topics16).find { it.id == id } ?: return@launch
+            topicRepository.setRead(id, !topic.isRead)
         }
     }
 
     private fun decrementReplyCount() {
         viewModelScope.launch {
+            val id = _syncState.value.selectedTopicId ?: return@launch
             val topics15 = topicRepository.getTopics(15)
             val topics16 = topicRepository.getTopics(16)
-            val watched = (topics15 + topics16).filter { it.isWatched }
-            if (watched.isNotEmpty()) {
-                val random = watched.random()
-                if (random.replyCount > 0) {
-                    topicRepository.upsertAll(listOf(random.copy(replyCount = random.replyCount - 1)))
-                }
+            val topic = (topics15 + topics16).find { it.id == id } ?: return@launch
+            if (topic.replyCount > 0) {
+                topicRepository.upsertAll(listOf(topic.copy(replyCount = topic.replyCount - 1)))
             }
         }
     }
@@ -305,7 +342,9 @@ class DebugViewModel @Inject constructor(
 
     private data class SyncDebugState(
         val isSyncing: Boolean = false,
-        val lastOutcome: SyncOutcome? = null
+        val lastOutcome: SyncOutcome? = null,
+        val lastDeletedTopicInfo: String? = null,
+        val selectedTopicId: Int? = null
     )
 
     private data class BenchDebugState(

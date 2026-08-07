@@ -2,6 +2,7 @@ package com.jdrvirtuel.watcher.data.parser
 
 import com.jdrvirtuel.watcher.domain.model.ParseResult
 import com.jdrvirtuel.watcher.domain.model.ParsedTopic
+import com.jdrvirtuel.watcher.domain.repository.TopicParser
 import org.jsoup.Jsoup
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -9,14 +10,14 @@ import javax.inject.Singleton
 @Singleton
 class TopicListParser @Inject constructor(
     private val dateParser: FrenchDateParser
-) {
+) : TopicParser {
     private val topicIdRegex = Regex("[?&]t=(\\d+)")
     private val replyCountRegex = Regex("(\\d+)")
     private val baseUrl = "https://www.jdrvirtuel.com/"
 
     private val datePatternRegex = Regex("\\p{L}{3}\\.\\s+\\d{1,2}\\s+\\p{L}+\\.?\\s+\\d{4}\\s+\\d{2}:\\d{2}")
 
-    fun parse(html: String): ParseResult {
+    override fun parse(html: String): ParseResult {
         if (html.isBlank()) {
             return ParseResult(emptyList(), 0, 0)
         }

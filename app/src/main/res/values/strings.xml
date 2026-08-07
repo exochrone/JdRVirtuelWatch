@@ -47,11 +47,16 @@
 
     <!-- Debug Synchronisation -->
     <string name="debug_sync_section">Synchronisation</string>
-    <string name="debug_sync_f15">Synchroniser le forum 15</string>
-    <string name="debug_sync_f16">Synchroniser le forum 16</string>
-    <string name="debug_sync_all">Tout synchroniser</string>
+    <string name="debug_sync_f15">Sync F15</string>
+    <string name="debug_sync_f16">Sync F16</string>
+    <string name="debug_sync_all">Tout Sync</string>
     <string name="debug_delete_random">Supprimer un sujet au hasard</string>
-    <string name="debug_decrement_replies">Décrémenter le compteur de réponses</string>
+    <string name="debug_last_deleted">Supprimé : %1$s</string>
+    <string name="debug_select_topic">Choisir un sujet cible</string>
+    <string name="debug_toggle_watched">Basculer surveillé</string>
+    <string name="debug_toggle_hidden">Basculer masqué</string>
+    <string name="debug_toggle_read">Basculer lu</string>
+    <string name="debug_decrement_replies">Décrémenter réponses</string>
     <string name="debug_reset_bootstrap">Réinitialiser l\'amorçage</string>
     <string name="debug_sync_outcome_title">Résultat de la synchronisation (%1$d)</string>
     <string name="debug_sync_status">Statut : %1$s</string>
@@ -71,6 +76,8 @@
     <string name="debug_bench_copy">Copier le journal</string>
     <string name="debug_bench_empty">Journal vide</string>
 
-    <!-- Accessibility -->
+    <!-- Debug Base de données -->
+    <string name="debug_database_section">Base de données</string>
+    <string name="debug_cloudflare_section">Cloudflare</string>
     <string name="back">Retour</string>
 </resources>

@@ -193,16 +193,34 @@ Une section « Synchronisation » est ajoutée :
   insérés, mis à jour, purgés, nombre de nouveaux sujets détectés, nombre de nouvelles
   réponses détectées ;
 - la liste des titres détectés comme nouveaux ;
-- deux outils de test :
+- les outils de test suivants :
   - « Supprimer un sujet au hasard », qui retire un sujet de la base afin qu'il soit
-    redétecté comme nouveau à la synchronisation suivante ;
-  - « Décrémenter le compteur de réponses », qui choisit un sujet sous surveillance et
-    diminue son `replyCount` de 1, afin de provoquer une nouvelle réponse artificielle ;
+    redétecté comme nouveau à la synchronisation suivante. **L'identifiant et le titre
+    du sujet supprimé sont affichés après l'action**, sans quoi il est impossible de
+    le reconnaître à la synchronisation suivante ;
   - « Réinitialiser l'amorçage », qui remet `isBootstrapped` à faux sur les deux
-    forums.
+    forums ;
+  - un **sélecteur de sujet** : une liste déroulante des sujets en base, présentés
+    sous la forme « identifiant, titre tronqué ». Le sujet choisi devient la cible des
+    actions ci-dessous, et ses quatre drapeaux (surveillé, masqué, lu, complet) ainsi
+    que son nombre de réponses sont affichés en permanence ;
+  - sur ce sujet sélectionné, quatre boutons : « Basculer surveillé », « Basculer
+    masqué », « Basculer lu », « Décrémenter le compteur de réponses ». Chacun affiche
+    l'état résultant.
 
-Ces trois outils sont indispensables pour valider les modules 04 et 08 sans attendre
-qu'un meneur de jeu publie une annonce.
+Ces outils sont indispensables pour valider les modules 04 et 08 sans attendre qu'un
+meneur de jeu publie une annonce. Le sélecteur de sujet en particulier est le seul
+moyen de tester les règles de notification, qui dépendent toutes de l'état d'un sujet
+précis.
+
+### Organisation de l'écran de debug
+
+L'écran s'enrichit à chaque module et devient vite illisible. Il est donc structuré en
+blocs repliables, titrés, refermés par défaut sauf le premier. Chaque bloc regroupe
+ses boutons **et** ses résultats, et aucun élément n'est collant en haut d'écran.
+
+Ordre des blocs : « Synchronisation », « Base de données », « Réseau », « Analyse
+HTML », « Cloudflare », « Banc de test ».
 
 ## Comportement
 
@@ -287,13 +305,16 @@ Les tests du module 03 doivent toujours passer.
 4. Appuyer de nouveau sur « Synchroniser le forum 15 ».
    Résultat attendu : issue « Succès », zéro insertion, des mises à jour, zéro
    nouveauté.
-5. Appuyer sur « Supprimer un sujet au hasard », noter son titre, puis resynchroniser.
+5. Appuyer sur « Supprimer un sujet au hasard ». Noter l'identifiant et le titre
+   affichés, puis resynchroniser.
    Résultat attendu : un nouveau sujet signalé, portant ce titre.
-6. Marquer un sujet comme surveillé depuis la base, à l'aide du bouton prévu dans
-   l'écran de debug, puis appuyer sur « Décrémenter le compteur de réponses » et
+6. Choisir un sujet dans le sélecteur, appuyer sur « Basculer surveillé » pour le
+   passer à surveillé, puis sur « Décrémenter le compteur de réponses », puis
    resynchroniser.
    Résultat attendu : une nouvelle réponse signalée, et le sujet repasse en non lu.
-7. Masquer un sujet, décrémenter son compteur de réponses, resynchroniser.
+7. Sur ce même sujet, appuyer sur « Basculer masqué ». Vérifier que le drapeau
+   surveillé est retombé à faux. Décrémenter de nouveau son compteur de réponses, puis
+   resynchroniser.
    Résultat attendu : aucune nouveauté signalée.
 8. Activer le mode avion et synchroniser.
    Résultat attendu : issue « Erreur », la liste des sujets reste intacte, la date du

@@ -9,15 +9,9 @@ import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -26,27 +20,11 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -54,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,11 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import com.jdrvirtuel.watcher.data.remote.WebViewConstants
-import com.jdrvirtuel.watcher.domain.model.Forum
-import com.jdrvirtuel.watcher.domain.model.ParsedTopic
-import com.jdrvirtuel.watcher.domain.model.SyncOutcome
-import com.jdrvirtuel.watcher.domain.model.SyncStatus
-import com.jdrvirtuel.watcher.domain.model.Topic
+import com.jdrvirtuel.watcher.domain.model.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,7 +52,6 @@ fun DebugScreen(
     viewModel: DebugViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -116,616 +90,256 @@ fun DebugScreen(
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(Dimens.md)
+                .padding(horizontal = Dimens.md)
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Button(
-                    onClick = { viewModel.onEvent(DebugEvent.InsertTestTopic) },
-                    modifier = Modifier.weight(1f)
+            item {
+                DebugCollapsibleSection(
+                    title = stringResource(R.string.debug_sync_section),
+                    initialExpanded = true
                 ) {
-                    Text(stringResource(R.string.debug_insert_test_topic))
+                    SyncSection(uiState, viewModel::onEvent)
                 }
             }
-            Spacer(modifier = Modifier.height(Dimens.sm))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Button(
-                    onClick = { showDeleteConfirmation = true },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.debug_clear_topics))
+            item {
+                DebugCollapsibleSection(title = stringResource(R.string.debug_database_section)) {
+                    DatabaseSection(uiState, viewModel::onEvent)
                 }
             }
-            Spacer(modifier = Modifier.height(Dimens.md))
-            Text(
-                text = stringResource(R.string.debug_total_topics, uiState.totalTopics),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
-            )
-            HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
-
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                item {
-                    BenchDebugSection(
-                        uiState = uiState,
-                        onEvent = viewModel::onEvent
-                    )
-                }
-
-                item {
-                    SyncDebugSection(
-                        uiState = uiState,
-                        onEvent = viewModel::onEvent
-                    )
-                }
-
-                item {
-                    NetworkDebugSection(
-                        uiState = uiState,
-                        onEvent = viewModel::onEvent
-                    )
-                }
-
-                item {
-                    ParserDebugSection(
-                        uiState = uiState,
-                        onEvent = viewModel::onEvent
-                    )
-                }
-
-                item {
-                    Text(
-                        text = stringResource(R.string.debug_forums_section),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(vertical = Dimens.sm)
-                    )
-                }
-                items(uiState.forums, key = { it.id }) { forum ->
-                    ForumDebugItem(forum)
-                }
-
-                item {
-                    Text(
-                        text = stringResource(R.string.debug_topics_section),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(vertical = Dimens.sm)
-                    )
-                }
-
-                if (uiState.totalTopics == 0) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.debug_no_topics),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(Dimens.md)
-                        )
-                    }
-                } else {
-                    uiState.forums.forEach { forum ->
-                        val topics = uiState.topicsByForum[forum.id] ?: emptyList()
-                        if (topics.isNotEmpty()) {
-                            item {
-                                Text(
-                                    text = forum.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(vertical = Dimens.xs)
-                                )
-                            }
-                            items(topics, key = { it.id }) { topic ->
-                                TopicDebugItem(topic)
-                            }
-                        }
-                    }
+            item {
+                DebugCollapsibleSection(title = stringResource(R.string.debug_network_section)) {
+                    NetworkSection(uiState, viewModel::onEvent)
                 }
             }
+            item {
+                DebugCollapsibleSection(title = stringResource(R.string.debug_parser_section)) {
+                    ParserSection(uiState, viewModel::onEvent)
+                }
+            }
+            item {
+                DebugCollapsibleSection(title = stringResource(R.string.debug_cloudflare_section)) {
+                    CloudflareSection()
+                }
+            }
+            item {
+                DebugCollapsibleSection(title = stringResource(R.string.debug_bench_section)) {
+                    BenchSection(uiState, viewModel::onEvent)
+                }
+            }
+            item { Spacer(modifier = Modifier.height(Dimens.lg)) }
         }
-    }
-
-    if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text(stringResource(R.string.debug_clear_topics_confirm_title)) },
-            text = { Text(stringResource(R.string.debug_clear_topics_confirm_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.onEvent(DebugEvent.ClearTopics)
-                    showDeleteConfirmation = false
-                }) {
-                    Text(stringResource(R.string.debug_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text(stringResource(R.string.debug_cancel))
-                }
-            }
-        )
     }
 }
 
 @Composable
-fun BenchDebugSection(
-    uiState: DebugUiState,
-    onEvent: (DebugEvent) -> Unit
+fun DebugCollapsibleSection(
+    title: String,
+    initialExpanded: Boolean = false,
+    content: @Composable () -> Unit
 ) {
-    Column {
-        Text(
-            text = stringResource(R.string.debug_bench_section),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = Dimens.sm)
-        )
-
-        OutlinedTextField(
-            value = uiState.benchIntervalMinutes.toString(),
-            onValueChange = { newValue ->
-                newValue.toIntOrNull()?.let { onEvent(DebugEvent.UpdateBenchInterval(it)) }
-            },
-            label = { Text(stringResource(R.string.debug_bench_interval)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !uiState.isBenchRunning
-        )
-
-        Spacer(modifier = Modifier.height(Dimens.sm))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { onEvent(DebugEvent.StartBench) },
-                enabled = !uiState.isBenchRunning,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_bench_start))
-            }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.StopBench) },
-                enabled = uiState.isBenchRunning,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_bench_stop))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.sm))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { onEvent(DebugEvent.ClearBenchLogs) },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_bench_reset))
-            }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.CopyBenchLogs) },
-                enabled = uiState.benchLogs.isNotEmpty(),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_bench_copy))
-            }
-        }
-
-        if (uiState.benchLogs.isEmpty()) {
+    var expanded by remember { mutableStateOf(initialExpanded) }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = Dimens.md),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = stringResource(R.string.debug_bench_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = Dimens.md)
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
             )
-        } else {
-            val dateFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(vertical = Dimens.sm)
-            ) {
-                LazyColumn(modifier = Modifier.padding(Dimens.sm)) {
-                    items(uiState.benchLogs) { entry ->
-                        val elapsed = entry.timeSinceStartMs / 1000
-                        val min = elapsed / 60
-                        val sec = elapsed % 60
-                        val logText = "${dateFormat.format(Date(entry.timestamp))} | +${min}m${sec}s | ${entry.result}" +
-                                (entry.htmlSize?.let { " | $it octets" } ?: "")
-                        
-                        Text(
-                            text = logText,
-                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                            color = when {
-                                entry.result == "Succès" -> MaterialTheme.colorScheme.primary
-                                entry.result == "Vérification requise" -> MaterialTheme.colorScheme.error
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                    }
-                }
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null
+            )
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.padding(bottom = Dimens.md)) {
+                content()
             }
         }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
+        HorizontalDivider()
     }
 }
 
 @Composable
-fun SyncDebugSection(
-    uiState: DebugUiState,
-    onEvent: (DebugEvent) -> Unit
-) {
+fun SyncSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
     Column {
-        Text(
-            text = stringResource(R.string.debug_sync_section),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = Dimens.sm)
-        )
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { onEvent(DebugEvent.SyncForum(15)) },
-                enabled = !uiState.isSyncing,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Sync F15")
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.SyncForum(15)) }, enabled = !uiState.isSyncing, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.debug_sync_f15))
             }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.SyncForum(16)) },
-                enabled = !uiState.isSyncing,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Sync F16")
+            Button(onClick = { onEvent(DebugEvent.SyncForum(16)) }, enabled = !uiState.isSyncing, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.debug_sync_f16))
             }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.SyncAll) },
-                enabled = !uiState.isSyncing,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Tout Sync")
+            Button(onClick = { onEvent(DebugEvent.SyncAll) }, enabled = !uiState.isSyncing, modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.debug_sync_all))
             }
         }
 
         if (uiState.isSyncing) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Dimens.md),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.sm))
         }
 
-        uiState.lastSyncOutcome?.let { outcome ->
-            SyncOutcomeCard(outcome)
-        }
+        uiState.lastSyncOutcome?.let { SyncOutcomeCard(it) }
 
         Spacer(modifier = Modifier.height(Dimens.sm))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { onEvent(DebugEvent.DeleteRandomTopic) },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_delete_random))
-            }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.DecrementReplyCount) },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_decrement_replies))
-            }
+        Button(onClick = { onEvent(DebugEvent.DeleteRandomTopic) }, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.debug_delete_random))
         }
-
-        Button(
-            onClick = { onEvent(DebugEvent.ResetBootstrap) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.debug_reset_bootstrap))
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
-    }
-}
-
-@Composable
-fun SyncOutcomeCard(outcome: SyncOutcome) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = Dimens.sm)
-    ) {
-        Column(modifier = Modifier.padding(Dimens.sm)) {
-            Text(
-                text = stringResource(R.string.debug_sync_outcome_title, outcome.forumId),
-                style = MaterialTheme.typography.titleSmall
-            )
-            val statusRes = when (outcome.status) {
-                SyncStatus.SUCCESS -> R.string.debug_sync_success
-                SyncStatus.CHALLENGE_REQUIRED -> R.string.debug_sync_challenge
-                SyncStatus.ERROR -> R.string.debug_sync_error
-            }
-            Text(
-                text = stringResource(R.string.debug_sync_status, stringResource(statusRes)),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                color = when (outcome.status) {
-                    SyncStatus.SUCCESS -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.error
-                }
-            )
-            if (outcome.errorMessage != null) {
-                Text(
-                    text = outcome.errorMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            Text(
-                text = stringResource(
-                    R.string.debug_sync_counts,
-                    outcome.parsedCount,
-                    outcome.insertedCount,
-                    outcome.updatedCount,
-                    outcome.purgedCount
-                ),
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            if (outcome.newTopics.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.debug_sync_new_topics, outcome.newTopics.size),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = Dimens.xs)
-                )
-                outcome.newTopics.forEach { topic ->
-                    Text(text = "• ${topic.title}", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-
-            if (outcome.newReplies.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.debug_sync_new_replies, outcome.newReplies.size),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = Dimens.xs)
-                )
-                outcome.newReplies.forEach { topic ->
-                    Text(text = "• ${topic.title}", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ParserDebugSection(
-    uiState: DebugUiState,
-    onEvent: (DebugEvent) -> Unit
-) {
-    val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()) }
-
-    Column {
-        Text(
-            text = stringResource(R.string.debug_parser_section),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = Dimens.sm)
-        )
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { onEvent(DebugEvent.ParseTestFile) },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_parse_test_file))
-            }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.ParseLastLoadedHtml) },
-                enabled = uiState.htmlContent != null,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_parse_last_html))
-            }
-        }
-
-        uiState.parseResult?.let { result ->
-            Text(
-                text = stringResource(
-                    R.string.debug_parse_result,
-                    result.topics.size,
-                    result.skippedSticky,
-                    result.skippedInvalid
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = Dimens.sm)
-            )
-
-            result.topics.forEach { parsedTopic ->
-                ParsedTopicDebugItem(parsedTopic, dateFormat)
-            }
-        }
-
-        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
-    }
-}
-
-@Composable
-fun ParsedTopicDebugItem(topic: ParsedTopic, dateFormat: SimpleDateFormat) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = Dimens.xs)
-    ) {
-        Column(modifier = Modifier.padding(Dimens.sm)) {
-            Text(
-                text = topic.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "ID: ${topic.id} | Réponses: ${topic.replyCount}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = stringResource(
-                    R.string.debug_topic_author,
-                    topic.author,
-                    dateFormat.format(Date(topic.createdAt))
-                ),
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = stringResource(
-                    R.string.debug_topic_last_post,
-                    topic.lastPostAuthor,
-                    dateFormat.format(Date(topic.lastPostAt))
-                ),
-                style = MaterialTheme.typography.bodySmall
-            )
-            if (topic.isFull) {
-                androidx.compose.material3.AssistChip(
-                    onClick = { },
-                    label = { Text(stringResource(R.string.debug_topic_full)) },
-                    modifier = Modifier.padding(top = Dimens.xs)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun NetworkDebugSection(
-    uiState: DebugUiState,
-    onEvent: (DebugEvent) -> Unit
-) {
-    Column {
-        Text(
-            text = stringResource(R.string.debug_network_section),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = Dimens.sm)
-        )
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = { onEvent(DebugEvent.FetchForumHtml(15)) },
-                enabled = !uiState.isNetworkLoading,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_load_forum_15))
-            }
-            Spacer(modifier = Modifier.padding(Dimens.xs))
-            Button(
-                onClick = { onEvent(DebugEvent.FetchForumHtml(16)) },
-                enabled = !uiState.isNetworkLoading,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(stringResource(R.string.debug_load_forum_16))
-            }
-        }
-
-        if (uiState.isNetworkLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Dimens.md),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-
-        uiState.fetchResult?.let { result ->
-            Text(
-                text = result,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = when {
-                    result == "Succès" -> MaterialTheme.colorScheme.primary
-                    result == "Vérification requise" -> MaterialTheme.colorScheme.error
-                    result.startsWith("Erreur") -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.onSurface
-                },
-                modifier = Modifier.padding(vertical = Dimens.sm)
-            )
-        }
-
-        uiState.htmlContent?.let { html ->
-            Text(
-                text = stringResource(R.string.debug_html_size, uiState.htmlSize),
-                style = MaterialTheme.typography.bodySmall
-            )
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .padding(vertical = Dimens.sm)
-            ) {
-                SelectionContainer {
-                    val scrollState = rememberScrollState()
-                    Text(
-                        text = html.take(2000),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(Dimens.sm)
-                            .verticalScroll(scrollState),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
-                    )
-                }
-            }
-            Button(
-                onClick = { onEvent(DebugEvent.CopyToClipboard(html)) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.debug_copy_html))
-            }
+        uiState.lastDeletedTopicInfo?.let {
+            Text(text = stringResource(R.string.debug_last_deleted, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
 
         Spacer(modifier = Modifier.height(Dimens.md))
-        
-        var showVisibleWebView by remember { mutableStateOf(false) }
-        
-        Text(
-            text = "En cas de blocage persistant, ce bouton permet de renouveler manuellement le cookie d'accès en cochant la case de vérification Cloudflare.",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(bottom = Dimens.xs)
-        )
-        Button(
-            onClick = { showVisibleWebView = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Valider le challenge Cloudflare")
+        TopicSelector(uiState, onEvent)
+    }
+}
+
+@Composable
+fun TopicSelector(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
+    val allTopics = uiState.topicsByForum.values.flatten()
+    val selectedTopic = allTopics.find { it.id == uiState.selectedTopicId }
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text("Outils sur sujet cible :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Box {
+            OutlinedTextField(
+                value = selectedTopic?.let { "${it.id} - ${it.title.take(20)}..." } ?: "Aucun sujet sélectionné",
+                onValueChange = { },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = { IconButton(onClick = { expanded = true }) { Icon(Icons.Default.ArrowDropDown, null) } }
+            )
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                allTopics.forEach { topic ->
+                    DropdownMenuItem(
+                        text = { Text("${topic.id} - ${topic.title.take(30)}...") },
+                        onClick = {
+                            onEvent(DebugEvent.SelectTopic(topic.id))
+                            expanded = false
+                        }
+                    )
+                }
+            }
         }
 
-        if (showVisibleWebView) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(700.dp)
-                    .padding(vertical = Dimens.sm)
-            ) {
+        if (selectedTopic != null) {
+            Column(modifier = Modifier.padding(top = Dimens.sm)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+                    FlagText("Surveillé", selectedTopic.isWatched)
+                    FlagText("Masqué", selectedTopic.isHidden)
+                    FlagText("Lu", selectedTopic.isRead)
+                    FlagText("Complet", selectedTopic.isFull)
+                }
+                Text("Réponses : ${selectedTopic.replyCount}", style = MaterialTheme.typography.bodySmall)
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    maxItemsInEachRow = 2,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.xs)
+                ) {
+                    Button(onClick = { onEvent(DebugEvent.ToggleWatched) }, modifier = Modifier.weight(1f)) { Text("Basc. surveillé") }
+                    Button(onClick = { onEvent(DebugEvent.ToggleHidden) }, modifier = Modifier.weight(1f)) { Text("Basc. masqué") }
+                    Button(onClick = { onEvent(DebugEvent.ToggleRead) }, modifier = Modifier.weight(1f)) { Text("Basc. lu") }
+                    Button(onClick = { onEvent(DebugEvent.DecrementReplyCount) }, modifier = Modifier.weight(1f)) { Text("Déc. réponses") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DatabaseSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
+    var showClearConfirm by remember { mutableStateOf(false) }
+    Column {
+        Button(onClick = { onEvent(DebugEvent.InsertTestTopic) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.debug_insert_test_topic)) }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { showClearConfirm = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.debug_clear_topics)) }
+            Button(onClick = { onEvent(DebugEvent.ResetBootstrap) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.debug_reset_bootstrap)) }
+        }
+        Text(text = stringResource(R.string.debug_total_topics, uiState.totalTopics), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = Dimens.sm))
+        
+        uiState.forums.forEach { forum ->
+            ForumDebugItem(forum)
+            val topics = uiState.topicsByForum[forum.id] ?: emptyList()
+            topics.forEach { TopicDebugItem(it) }
+        }
+    }
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text(stringResource(R.string.debug_clear_topics_confirm_title)) },
+            confirmButton = { TextButton(onClick = { onEvent(DebugEvent.ClearTopics); showClearConfirm = false }) { Text(stringResource(R.string.debug_confirm)) } },
+            dismissButton = { TextButton(onClick = { showClearConfirm = false }) { Text(stringResource(R.string.debug_cancel)) } }
+        )
+    }
+}
+
+@Composable
+fun NetworkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
+    Column {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.FetchForumHtml(15)) }, enabled = !uiState.isNetworkLoading, modifier = Modifier.weight(1f)) { Text("Load F15") }
+            Button(onClick = { onEvent(DebugEvent.FetchForumHtml(16)) }, enabled = !uiState.isNetworkLoading, modifier = Modifier.weight(1f)) { Text("Load F16") }
+        }
+        if (uiState.isNetworkLoading) CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(Dimens.sm))
+        uiState.fetchResult?.let { Text(it, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
+        uiState.htmlContent?.let { html ->
+            Text(stringResource(R.string.debug_html_size, uiState.htmlSize), style = MaterialTheme.typography.bodySmall)
+            Card(modifier = Modifier.fillMaxWidth().height(150.dp).padding(vertical = Dimens.xs)) {
+                SelectionContainer {
+                    val scroll = rememberScrollState()
+                    Text(html.take(1000), modifier = Modifier.padding(Dimens.xs).verticalScroll(scroll), style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
+                }
+            }
+            Button(onClick = { onEvent(DebugEvent.CopyToClipboard(html)) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.debug_copy_html)) }
+        }
+    }
+}
+
+@Composable
+fun ParserSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
+    val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()) }
+    Column {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.ParseTestFile) }, modifier = Modifier.weight(1f)) { Text("Parse Test File") }
+            Button(onClick = { onEvent(DebugEvent.ParseLastLoadedHtml) }, enabled = uiState.htmlContent != null, modifier = Modifier.weight(1f)) { Text("Parse Last HTML") }
+        }
+        uiState.parseResult?.let { res ->
+            Text(stringResource(R.string.debug_parse_result, res.topics.size, res.skippedSticky, res.skippedInvalid), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            res.topics.forEach { ParsedTopicDebugItem(it, dateFormat) }
+        }
+    }
+}
+
+@Composable
+fun CloudflareSection() {
+    var showWebView by remember { mutableStateOf(false) }
+    Column {
+        Button(onClick = { showWebView = !showWebView }, modifier = Modifier.fillMaxWidth()) { Text(if (showWebView) "Masquer WebView" else "Valider Challenge Cloudflare") }
+        if (showWebView) {
+            Card(modifier = Modifier.fillMaxWidth().height(600.dp).padding(vertical = Dimens.sm)) {
                 AndroidView(
-                    factory = { context ->
-                        WebView(context).apply {
+                    factory = { ctx ->
+                        WebView(ctx).apply {
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
                             settings.useWideViewPort = true
                             settings.loadWithOverviewMode = true
-                            
                             CookieManager.getInstance().setAcceptCookie(true)
-                            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                            
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
-                                    view?.evaluateJavascript("(function(){return document.documentElement.outerHTML;})();") { value ->
-                                        if (value != null && value.contains(WebViewConstants.SUCCESS_MARKER)) {
-                                            CookieManager.getInstance().flush()
-                                        }
+                                    view?.evaluateJavascript("(function(){return document.documentElement.outerHTML;})();") { valStr ->
+                                        if (valStr != null && valStr.contains(WebViewConstants.SUCCESS_MARKER)) CookieManager.getInstance().flush()
                                     }
                                 }
                             }
@@ -736,61 +350,116 @@ fun NetworkDebugSection(
                 )
             }
         }
-        
-        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
     }
 }
 
 @Composable
-fun ForumDebugItem(forum: Forum) {
-    val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()) }
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = Dimens.xs)
-    ) {
-        Column(modifier = Modifier.padding(Dimens.sm)) {
-            Text(text = "${forum.id} - ${forum.name}", style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = if (forum.isBootstrapped) stringResource(R.string.debug_forum_bootstrapped)
-                else stringResource(R.string.debug_forum_not_bootstrapped),
-                style = MaterialTheme.typography.bodySmall
-            )
-            val syncText = forum.lastSyncAt?.let { dateFormat.format(Date(it)) } ?: stringResource(R.string.debug_never_synced)
-            Text(
-                text = stringResource(R.string.debug_last_sync, syncText),
-                style = MaterialTheme.typography.bodySmall
-            )
+fun BenchSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
+    Column {
+        OutlinedTextField(
+            value = uiState.benchIntervalMinutes.toString(),
+            onValueChange = { onEvent(DebugEvent.UpdateBenchInterval(it.toIntOrNull() ?: 5)) },
+            label = { Text(stringResource(R.string.debug_bench_interval)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.isBenchRunning
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.StartBench) }, enabled = !uiState.isBenchRunning, modifier = Modifier.weight(1f)) { Text("Démarrer") }
+            Button(onClick = { onEvent(DebugEvent.StopBench) }, enabled = uiState.isBenchRunning, modifier = Modifier.weight(1f)) { Text("Arrêter") }
         }
-    }
-}
-
-@Composable
-fun TopicDebugItem(topic: Topic) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = Dimens.xs)
-    ) {
-        Column(modifier = Modifier.padding(Dimens.sm)) {
-            Text(text = topic.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-            Text(text = stringResource(R.string.debug_topic_id, topic.id), style = MaterialTheme.typography.bodySmall)
-            Text(text = stringResource(R.string.debug_topic_replies, topic.replyCount), style = MaterialTheme.typography.bodySmall)
-            Row {
-                FlagText("Full", topic.isFull)
-                FlagText("Hidden", topic.isHidden)
-                FlagText("Watched", topic.isWatched)
-                FlagText("Read", topic.isRead)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.ClearBenchLogs) }, modifier = Modifier.weight(1f)) { Text("Reset Log") }
+            Button(onClick = { onEvent(DebugEvent.CopyBenchLogs) }, enabled = uiState.benchLogs.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Copier Log") }
+        }
+        if (uiState.benchLogs.isNotEmpty()) {
+            val df = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+            Card(modifier = Modifier.fillMaxWidth().height(200.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs)) {
+                    items(uiState.benchLogs) { e ->
+                        val el = e.timeSinceStartMs / 1000
+                        Text("${df.format(Date(e.timestamp))} | +${el/60}m${el%60}s | ${e.result}${e.htmlSize?.let { " | $it oct." } ?: ""}", style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
+fun SyncOutcomeCard(outcome: SyncOutcome) {
+    Card(modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.xs)) {
+        Column(modifier = Modifier.padding(Dimens.sm)) {
+            Text(stringResource(R.string.debug_sync_outcome_title, outcome.forumId), style = MaterialTheme.typography.titleSmall)
+            Text("Statut : ${outcome.status}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            Text("Parsed: ${outcome.parsedCount} | Ins: ${outcome.insertedCount} | Upd: ${outcome.updatedCount} | Purg: ${outcome.purgedCount}", style = MaterialTheme.typography.bodySmall)
+            if (outcome.newTopics.isNotEmpty()) Text("Nouveaux : ${outcome.newTopics.size}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            if (outcome.newReplies.isNotEmpty()) Text("Réponses : ${outcome.newReplies.size}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+fun ForumDebugItem(forum: Forum) {
+    Text(text = "${forum.id} - ${forum.name} (${if(forum.isBootstrapped) "Amorcé" else "Non amorcé"})", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+}
+
+@Composable
+fun TopicDebugItem(topic: Topic) {
+    Column(modifier = Modifier.padding(vertical = Dimens.xs)) {
+        Text(
+            text = topic.title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        val flags = mutableListOf<String>()
+        if (topic.isFull) flags.add("Complet")
+        if (topic.isWatched) flags.add("Surveillé")
+        if (topic.isHidden) flags.add("Masqué")
+        if (!topic.isRead) flags.add("Non lu")
+
+        val metadata = buildString {
+            append("${topic.replyCount} réponses")
+            flags.forEach { append(" · $it") }
+            append(" · #${topic.id}")
+        }
+        Text(
+            text = metadata,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun ParsedTopicDebugItem(topic: ParsedTopic, df: SimpleDateFormat) {
+    Column(modifier = Modifier.padding(vertical = Dimens.xs)) {
+        Text(
+            text = topic.title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        val flags = mutableListOf<String>()
+        if (topic.isFull) flags.add("Complet")
+
+        val metadata = buildString {
+            append("${topic.replyCount} réponses")
+            flags.forEach { append(" · $it") }
+            append(" · #${topic.id}")
+        }
+        Text(
+            text = metadata,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
 fun FlagText(label: String, active: Boolean) {
-    Text(
-        text = "$label: ${if (active) "Y" else "N"} ",
-        style = MaterialTheme.typography.bodySmall,
-        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Text(text = "$label: ${if (active) "Y" else "N"} ", style = MaterialTheme.typography.bodySmall, color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
 }

@@ -1,6 +1,5 @@
 package com.jdrvirtuel.watcher.domain.usecase
 
-import com.jdrvirtuel.watcher.data.parser.TopicListParser
 import com.jdrvirtuel.watcher.domain.model.*
 import com.jdrvirtuel.watcher.domain.repository.*
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +14,7 @@ class SyncForumUseCase @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val forumPageSource: ForumPageSource,
-    private val parser: TopicListParser,
+    private val parser: TopicParser,
     private val notifier: NewContentNotifier
 ) {
     private val mutexes = mutableMapOf<Int, Mutex>()
@@ -38,18 +37,18 @@ class SyncForumUseCase @Inject constructor(
             val fetchResult = forumPageSource.fetchHtml(forum.url)
             when (fetchResult) {
                 is FetchResult.ChallengeRequired -> {
-                    forumRepository.updateSyncState(forumId, false, forum.lastSyncAt ?: 0, "Vérification Cloudflare requise")
+                    forumRepository.updateSyncState(forumId, false, null, "Vérification Cloudflare requise")
                     SyncOutcome(forumId, SyncStatus.CHALLENGE_REQUIRED)
                 }
                 is FetchResult.Error -> {
-                    forumRepository.updateSyncState(forumId, false, forum.lastSyncAt ?: 0, fetchResult.message)
+                    forumRepository.updateSyncState(forumId, false, null, fetchResult.message)
                     SyncOutcome(forumId, SyncStatus.ERROR, errorMessage = fetchResult.message)
                 }
                 is FetchResult.Success -> {
                     val parseResult = parser.parse(fetchResult.html)
                     if (parseResult.topics.isEmpty() && fetchResult.html.isNotEmpty()) {
                         val error = "Structure inattendue : aucun sujet trouvé"
-                        forumRepository.updateSyncState(forumId, false, forum.lastSyncAt ?: 0, error)
+                        forumRepository.updateSyncState(forumId, false, null, error)
                         return@withContext SyncOutcome(forumId, SyncStatus.ERROR, errorMessage = error)
                     }
 
@@ -111,7 +110,7 @@ class SyncForumUseCase @Inject constructor(
                     }
 
                     val thirtyDaysAgo = now - (30L * 24 * 60 * 60 * 1000)
-                    val purgedCount = topicRepository.deleteStale(thirtyDaysAgo)
+                    val purgedCount = topicRepository.deleteStale(forumId, thirtyDaysAgo)
 
                     forumRepository.updateSyncState(forumId, true, now, null)
 

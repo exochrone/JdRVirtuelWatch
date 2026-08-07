@@ -24,6 +24,8 @@ data class DebugUiState(
     // Sync Debug
     val isSyncing: Boolean = false,
     val lastSyncOutcome: SyncOutcome? = null,
+    val lastDeletedTopicInfo: String? = null,
+    val selectedTopicId: Int? = null,
 
     // Cloudflare Test Bench
     val isBenchRunning: Boolean = false,
@@ -55,6 +57,10 @@ sealed interface DebugEvent {
     data class SyncForum(val forumId: Int) : DebugEvent
     data object SyncAll : DebugEvent
     data object DeleteRandomTopic : DebugEvent
+    data class SelectTopic(val topicId: Int?) : DebugEvent
+    data object ToggleWatched : DebugEvent
+    data object ToggleHidden : DebugEvent
+    data object ToggleRead : DebugEvent
     data object DecrementReplyCount : DebugEvent
     data object ResetBootstrap : DebugEvent
 
