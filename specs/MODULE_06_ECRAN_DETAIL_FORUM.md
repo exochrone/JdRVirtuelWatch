@@ -110,13 +110,16 @@ place dans cet ordre, seul leur rendu change.
 
 ### Grisage
 
-Deux cas produisent un rendu grisé, et doivent rester distinguables :
+Un sujet masqué n'est pas affiché, sauf lorsque l'option « Afficher les sujets
+masqués » est active. Dans ce cas seulement, il réapparaît grisé et se retrouve côte à
+côte avec les sujets complets, eux aussi grisés. Les trois combinaisons suivantes
+doivent alors rester distinguables au premier coup d'oeil :
 
 | Cas | Rendu |
 |---|---|
 | Sujet complet | Contenu grisé, pastille « Complet » visible |
-| Sujet masqué affiché | Contenu grisé, icône œil barré en position « masqué » |
-| Sujet complet et masqué | Contenu grisé, pastille « Complet » et icône œil barré |
+| Sujet masqué, option d'affichage active | Contenu grisé, icône oeil barré en position « masqué » |
+| Sujet complet et masqué, option active | Contenu grisé, pastille « Complet » et icône oeil barré |
 
 Le grisage est produit par un composable `DimmedContent` défini dans
 `core.ui.component`, qui applique un `alpha` de `0.5f` au conteneur.

@@ -98,4 +98,18 @@
     <string name="home_sync_failed">Échec de la synchronisation</string>
     <string name="home_sync_challenge">Vérification requise pour accéder au forum</string>
     <string name="home_sync_unexpected_error">Erreur inattendue lors de la synchronisation</string>
+
+    <!-- Forum Detail -->
+    <string name="forum_detail_show_hidden">Afficher les sujets masqués</string>
+    <string name="forum_detail_hide_hidden">Cacher les sujets masqués</string>
+    <string name="forum_detail_empty">Aucun sujet, tirez pour rafraîchir</string>
+    <string name="forum_detail_all_hidden">Tous les sujets sont masqués</string>
+    <string name="forum_detail_topic_full">COMPLET</string>
+    <string name="forum_detail_topic_meta">par %1$s le %2$s</string>
+    <string name="forum_detail_topic_last_post">%1$d réponses, dernier message de %2$s %3$s</string>
+    <string name="forum_detail_topic_masked">Sujet masqué</string>
+    <string name="forum_detail_undo">Annuler</string>
+    <string name="forum_detail_watch_enabled">Surveillance activée</string>
+    <string name="forum_detail_watch_disabled">Surveillance désactivée</string>
+    <string name="forum_detail_no_browser">Aucun navigateur disponible</string>
 </resources>
