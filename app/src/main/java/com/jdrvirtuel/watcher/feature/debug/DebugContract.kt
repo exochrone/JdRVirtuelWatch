@@ -30,7 +30,18 @@ data class DebugUiState(
     // Cloudflare Test Bench
     val isBenchRunning: Boolean = false,
     val benchIntervalMinutes: Int = 5,
-    val benchLogs: List<BenchEntry> = emptyList()
+    val benchLogs: List<BenchEntry> = emptyList(),
+
+    // Browser Debug
+    val ctCompatiblePackages: List<BrowserPackageUiModel> = emptyList(),
+    val installedBrowserPackages: List<String> = emptyList(),
+    val preferredBrowserPackage: String? = null,
+    val lastBrowserTestResult: String? = null
+)
+
+data class BrowserPackageUiModel(
+    val packageName: String,
+    val label: String
 )
 
 data class BenchEntry(
@@ -70,6 +81,13 @@ sealed interface DebugEvent {
     data object StopBench : DebugEvent
     data object ClearBenchLogs : DebugEvent
     data object CopyBenchLogs : DebugEvent
+
+    // Browser Debug
+    data object RefreshBrowserInfo : DebugEvent
+    data class SetPreferredBrowser(val packageName: String?) : DebugEvent
+    data object TestBrowserLauncher : DebugEvent
+    data object TestBraveCustomTabs : DebugEvent
+    data object TestActionViewSimple : DebugEvent
 }
 
 sealed interface DebugEffect {

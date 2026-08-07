@@ -45,6 +45,17 @@
     <string name="debug_topic_last_post">Dernier message par %1$s le %2$s</string>
     <string name="debug_topic_full">COMPLET</string>
 
+    <!-- Debug Browser -->
+    <string name="debug_browser_section">Navigateur</string>
+    <string name="debug_browser_ct_compatible">Custom Tabs compatibles :</string>
+    <string name="debug_browser_installed">Navigateurs installés :</string>
+    <string name="debug_browser_none">Aucun trouvé</string>
+    <string name="debug_browser_test_launcher">Ouvrir via BrowserLauncher</string>
+    <string name="debug_browser_test_brave">Ouvrir via Custom Tabs forcé Brave</string>
+    <string name="debug_browser_test_action_view">Ouvrir via ACTION_VIEW simple</string>
+    <string name="debug_browser_result">Dernier test : %1$s</string>
+    <string name="debug_browser_success">Succès</string>
+
     <!-- Debug Synchronisation -->
     <string name="debug_sync_section">Synchronisation</string>
     <string name="debug_sync_f15">Sync F15</string>
@@ -104,6 +115,8 @@
     <string name="forum_detail_hide_hidden">Cacher les sujets masqués</string>
     <string name="forum_detail_empty">Aucun sujet, tirez pour rafraîchir</string>
     <string name="forum_detail_all_hidden">Tous les sujets sont masqués</string>
+    <string name="forum_detail_summary_displayed_on_total">%1$d sujets affichés sur %2$d</string>
+    <string name="forum_detail_summary_total_with_hidden">%1$d sujets, dont %2$d masqués</string>
     <string name="forum_detail_topic_full">COMPLET</string>
     <string name="forum_detail_topic_meta">par %1$s le %2$s</string>
     <string name="forum_detail_topic_last_post">%1$d réponses, dernier message de %2$s %3$s</string>

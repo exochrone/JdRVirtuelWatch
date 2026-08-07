@@ -58,3 +58,9 @@ val SurfaceDark = Color(0xFF1A1111)
 val OnSurfaceDark = Color(0xFFF1DFDE)
 val SurfaceVariantDark = Color(0xFF534342)
 val OnSurfaceVariantDark = Color(0xFFD8C2C1)
+
+// Unread Badge Colors
+val UnreadContainerLight = Color(0xFF2E7D32) // Forest Green 800
+val OnUnreadContainerLight = Color(0xFFFFFFFF)
+val UnreadContainerDark = Color(0xFF81C784) // Green 300
+val OnUnreadContainerDark = Color(0xFF003300)

@@ -48,6 +48,12 @@ Applications imposées :
     heure en cas de blocage) ;
   - section « Notifications » : un bouton « Gérer les notifications » ouvrant les
     réglages système de l'application, où l'utilisateur pilote les trois canaux ;
+  - section « Navigation » : un sélecteur du navigateur utilisé pour ouvrir les
+    sujets, listant les navigateurs déclarant le service Custom Tabs plus une entrée
+    « Choix du système ». Ce sélecteur existe déjà dans l'écran de debug depuis le
+    module 06 : il est **déplacé** ici, pas réécrit, et retiré de l'écran de debug.
+    La valeur est lue et écrite dans `AppPreferences` sous la clé
+    `preferred_browser_package` ;
   - section « Données » : le nombre de sujets stockés, un bouton « Effacer les données
     locales » avec confirmation, qui vide les sujets et remet les forums à l'état non
     amorcé ;

@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
+import com.jdrvirtuel.watcher.core.ui.theme.LocalCustomColors
 import com.jdrvirtuel.watcher.core.util.DateFormatter
 
 @Composable
@@ -50,7 +51,10 @@ fun ForumCard(
                 )
 
                 if (forum.unreadCount > 0) {
-                    Badge {
+                    Badge(
+                        containerColor = LocalCustomColors.current.unreadContainer,
+                        contentColor = LocalCustomColors.current.onUnreadContainer
+                    ) {
                         Text(
                             text = if (forum.unreadCount > 99) "99+" else forum.unreadCount.toString()
                         )

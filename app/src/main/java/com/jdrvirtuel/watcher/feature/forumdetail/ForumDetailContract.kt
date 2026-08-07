@@ -9,7 +9,10 @@ data class ForumDetailUiState(
     val showHidden: Boolean = false,
     val isSyncing: Boolean = false,
     val isLoading: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val totalTopicCount: Int = 0,
+    val displayedTopicCount: Int = 0,
+    val hiddenTopicCount: Int = 0
 )
 
 @Immutable

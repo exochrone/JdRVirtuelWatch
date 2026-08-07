@@ -1,8 +1,16 @@
 package com.jdrvirtuel.watcher.feature.debug
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.util.Log
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jdrvirtuel.watcher.core.util.BrowserLauncher
+import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.data.parser.TopicListParser
 import com.jdrvirtuel.watcher.domain.model.FetchResult
 import com.jdrvirtuel.watcher.domain.model.Forum
@@ -41,6 +49,7 @@ class DebugViewModel @Inject constructor(
     private val parser: TopicListParser,
     private val syncForumUseCase: SyncForumUseCase,
     private val syncAllForumsUseCase: SyncAllForumsUseCase,
+    val appPreferences: AppPreferences,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -51,6 +60,7 @@ class DebugViewModel @Inject constructor(
     private val _parserState = MutableStateFlow(ParserDebugState())
     private val _syncState = MutableStateFlow(SyncDebugState())
     private val _benchState = MutableStateFlow(BenchDebugState())
+    private val _browserState = MutableStateFlow(BrowserDebugState())
 
     private var benchJob: Job? = null
     private var benchStartTime: Long = 0
@@ -63,7 +73,9 @@ class DebugViewModel @Inject constructor(
         _networkState,
         _parserState,
         _syncState,
-        _benchState
+        _benchState,
+        _browserState,
+        appPreferences.preferredBrowserPackage
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -73,6 +85,8 @@ class DebugViewModel @Inject constructor(
         val parserState = array[5] as ParserDebugState
         val sync = array[6] as SyncDebugState
         val bench = array[7] as BenchDebugState
+        val browser = array[8] as BrowserDebugState
+        val preferredBrowser = array[9] as String?
 
         DebugUiState(
             forums = forums,
@@ -89,7 +103,11 @@ class DebugViewModel @Inject constructor(
             selectedTopicId = sync.selectedTopicId,
             isBenchRunning = bench.isRunning,
             benchIntervalMinutes = bench.intervalMinutes,
-            benchLogs = bench.logs
+            benchLogs = bench.logs,
+            ctCompatiblePackages = browser.ctCompatiblePackages,
+            installedBrowserPackages = browser.installedBrowserPackages,
+            preferredBrowserPackage = preferredBrowser,
+            lastBrowserTestResult = browser.lastTestResult
         )
     }.stateIn(
         scope = viewModelScope,
@@ -134,6 +152,67 @@ class DebugViewModel @Inject constructor(
                 _benchState.update { it.copy(logs = emptyList()) }
             }
             DebugEvent.CopyBenchLogs -> copyBenchLogs()
+            DebugEvent.RefreshBrowserInfo -> refreshBrowserInfo()
+            is DebugEvent.SetPreferredBrowser -> {
+                viewModelScope.launch {
+                    appPreferences.setPreferredBrowserPackage(event.packageName)
+                }
+            }
+            DebugEvent.TestBrowserLauncher -> testBrowserLauncher()
+            DebugEvent.TestBraveCustomTabs -> testBraveCustomTabs()
+            DebugEvent.TestActionViewSimple -> testActionViewSimple()
+        }
+    }
+
+    private fun refreshBrowserInfo() {
+        val launcher = BrowserLauncher(context, appPreferences, viewModelScope)
+        val ctPackages = launcher.listCustomTabsBrowsers().map {
+            BrowserPackageUiModel(it.packageName, it.label)
+        }
+        
+        Log.d("CTDEBUG", "CT Compatible: ${ctPackages.joinToString(", ") { it.packageName }.ifEmpty { "None" }}")
+        
+        val pm = context.packageManager
+        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com"))
+        val browsers = pm.queryIntentActivities(browserIntent, PackageManager.MATCH_ALL)
+        val browserPackages = browsers.map { it.activityInfo.packageName }
+        
+        _browserState.update { it.copy(
+            ctCompatiblePackages = ctPackages,
+            installedBrowserPackages = browserPackages
+        ) }
+    }
+
+    private val testUrl = "https://www.jdrvirtuel.com/viewtopic.php?f=15&t=41234"
+
+    private fun testBrowserLauncher() {
+        val launcher = BrowserLauncher(context, appPreferences, viewModelScope)
+        launcher.openUrl(testUrl) { success ->
+            _browserState.update { it.copy(lastTestResult = if (success) "Succès (BrowserLauncher)" else "Échec (BrowserLauncher)") }
+        }
+    }
+
+    private fun testBraveCustomTabs() {
+        try {
+            val intent = CustomTabsIntent.Builder().build().intent
+            intent.setPackage("com.brave.browser")
+            intent.data = Uri.parse(testUrl)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            _browserState.update { it.copy(lastTestResult = "Succès (Brave CT)") }
+        } catch (e: Exception) {
+            _browserState.update { it.copy(lastTestResult = "Exception : ${e.message}") }
+        }
+    }
+
+    private fun testActionViewSimple() {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(testUrl))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            _browserState.update { it.copy(lastTestResult = "Succès (ACTION_VIEW)") }
+        } catch (e: Exception) {
+            _browserState.update { it.copy(lastTestResult = "Exception : ${e.message}") }
         }
     }
 
@@ -351,6 +430,12 @@ class DebugViewModel @Inject constructor(
         val isRunning: Boolean = false,
         val intervalMinutes: Int = 5,
         val logs: List<BenchEntry> = emptyList()
+    )
+
+    private data class BrowserDebugState(
+        val ctCompatiblePackages: List<BrowserPackageUiModel> = emptyList(),
+        val installedBrowserPackages: List<String> = emptyList(),
+        val lastTestResult: String? = null
     )
 
     private fun insertTestTopic() {

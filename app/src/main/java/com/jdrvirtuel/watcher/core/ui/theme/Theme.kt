@@ -8,7 +8,22 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+
+data class CustomColors(
+    val unreadContainer: Color,
+    val onUnreadContainer: Color
+)
+
+val LocalCustomColors = staticCompositionLocalOf {
+    CustomColors(
+        unreadContainer = Color.Unspecified,
+        onUnreadContainer = Color.Unspecified
+    )
+}
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryDark,
@@ -75,9 +90,17 @@ fun JdrVirtuelWatcherTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val customColors = if (darkTheme) {
+        CustomColors(unreadContainer = UnreadContainerDark, onUnreadContainer = OnUnreadContainerDark)
+    } else {
+        CustomColors(unreadContainer = UnreadContainerLight, onUnreadContainer = OnUnreadContainerLight)
+    }
+
+    CompositionLocalProvider(LocalCustomColors provides customColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

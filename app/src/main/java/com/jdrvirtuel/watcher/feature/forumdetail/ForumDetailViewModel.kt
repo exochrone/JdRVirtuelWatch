@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.util.DateFormatter
+import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
 import com.jdrvirtuel.watcher.domain.model.Topic
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
@@ -32,6 +33,7 @@ class ForumDetailViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val syncForumUseCase: SyncForumUseCase,
+    val appPreferences: AppPreferences,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -53,8 +55,8 @@ class ForumDetailViewModel @Inject constructor(
         if (forum == null) {
             ForumDetailUiState(errorMessage = "Forum introuvable", isLoading = false)
         } else {
-            val allHidden = topics.isNotEmpty() && topics.all { it.isHidden }
-            val isEmpty = topics.isEmpty()
+            val totalCount = topics.size
+            val hiddenCount = topics.count { it.isHidden }
 
             val filteredTopics = topics
                 .filter { showHidden || !it.isHidden }
@@ -64,12 +66,19 @@ class ForumDetailViewModel @Inject constructor(
                 )
                 .map { it.toUiModel() }
 
+            val displayedCount = filteredTopics.size
+            val allHidden = topics.isNotEmpty() && topics.all { it.isHidden }
+            val isEmpty = topics.isEmpty()
+
             ForumDetailUiState(
                 forumName = forum.name,
                 topics = filteredTopics,
                 showHidden = showHidden,
                 isSyncing = isSyncing,
                 isLoading = false,
+                totalTopicCount = totalCount,
+                displayedTopicCount = displayedCount,
+                hiddenTopicCount = hiddenCount,
                 errorMessage = when {
                     isEmpty -> context.getString(R.string.forum_detail_empty)
                     !showHidden && allHidden -> context.getString(R.string.forum_detail_all_hidden)
