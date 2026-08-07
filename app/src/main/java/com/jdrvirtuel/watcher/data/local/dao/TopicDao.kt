@@ -43,4 +43,7 @@ interface TopicDao {
     
     @Query("SELECT COUNT(*) FROM topics")
     fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId")
+    fun observeTopicCount(forumId: Int): Flow<Int>
 }

@@ -80,4 +80,20 @@
     <string name="debug_database_section">Base de données</string>
     <string name="debug_cloudflare_section">Cloudflare</string>
     <string name="back">Retour</string>
+
+    <!-- Home -->
+    <string name="home_refresh">Rafraîchir</string>
+    <string name="home_debug">Écran de debug</string>
+    <string name="home_never_synced">Jamais synchronisé</string>
+    <string name="home_last_sync">Mis à jour %1$s</string>
+    <string name="home_topics_count_zero">0 sujet</string>
+    <string name="home_topics_count_singular">1 sujet</string>
+    <string name="home_topics_count_plural">%1$d sujets</string>
+    <string name="home_sync_error">Dernière synchronisation en échec</string>
+    <string name="home_sync_success_no_news">Aucune nouveauté</string>
+    <string name="home_sync_success_news_singular">1 nouveau sujet</string>
+    <string name="home_sync_success_news_plural">%1$d nouveaux sujets</string>
+    <string name="home_sync_failed">Échec de la synchronisation</string>
+    <string name="home_sync_challenge">Vérification requise pour accéder au forum</string>
+    <string name="home_sync_unexpected_error">Erreur inattendue lors de la synchronisation</string>
 </resources>

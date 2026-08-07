@@ -48,6 +48,9 @@ class TopicRepositoryImpl @Inject constructor(
     override fun observeUnreadCount(forumId: Int): Flow<Int> =
         topicDao.countUnread(forumId)
 
+    override fun observeTopicCount(forumId: Int): Flow<Int> =
+        topicDao.observeTopicCount(forumId)
+
     override suspend fun deleteAll() {
         topicDao.deleteAll()
     }

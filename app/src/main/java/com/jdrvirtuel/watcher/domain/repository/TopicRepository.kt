@@ -13,7 +13,8 @@ interface TopicRepository {
     suspend fun deleteById(id: Int)
     suspend fun deleteStale(forumId: Int, threshold: Long): Int
     fun observeUnreadCount(forumId: Int): Flow<Int>
-    
+    fun observeTopicCount(forumId: Int): Flow<Int>
+
     // For debug
     suspend fun deleteAll()
     fun observeTotalCount(): Flow<Int>
