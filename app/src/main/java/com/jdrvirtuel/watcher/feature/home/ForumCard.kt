@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import com.jdrvirtuel.watcher.R
@@ -58,11 +59,11 @@ fun ForumCard(
             }
 
             Text(
-                text = when {
-                    forum.topicCount == 0 -> stringResource(R.string.home_topics_count_zero)
-                    forum.topicCount == 1 -> stringResource(R.string.home_topics_count_singular)
-                    else -> stringResource(R.string.home_topics_count_plural, forum.topicCount)
-                },
+                text = pluralStringResource(
+                    R.plurals.home_topics_count,
+                    forum.topicCount,
+                    forum.topicCount
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
 

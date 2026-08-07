@@ -86,9 +86,11 @@
     <string name="home_debug">Écran de debug</string>
     <string name="home_never_synced">Jamais synchronisé</string>
     <string name="home_last_sync">Mis à jour %1$s</string>
-    <string name="home_topics_count_zero">0 sujet</string>
-    <string name="home_topics_count_singular">1 sujet</string>
-    <string name="home_topics_count_plural">%1$d sujets</string>
+    <plurals name="home_topics_count">
+        <item quantity="zero">0 sujet</item>
+        <item quantity="one">1 sujet</item>
+        <item quantity="other">%1$d sujets</item>
+    </plurals>
     <string name="home_sync_error">Dernière synchronisation en échec</string>
     <string name="home_sync_success_no_news">Aucune nouveauté</string>
     <string name="home_sync_success_news_singular">1 nouveau sujet</string>
