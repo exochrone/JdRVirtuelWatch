@@ -89,8 +89,9 @@ Le bandeau disparaît dès qu'une synchronisation réussit.
 
 ### Comportement de l'écran
 
-1. La WebView utilise exactement le même user agent que
-   `WebViewForumPageSource`, faute de quoi le cookie obtenu serait inutilisable.
+1. La WebView ne modifie pas `settings.userAgentString`, exactement comme
+   `WebViewForumPageSource`. Imposer un user agent fait basculer Cloudflare en
+   challenge interactif et rend le cookie éphémère. Voir l'encadré du module 02.
 2. Elle partage le `CookieManager` de l'application, ce qui est le comportement par
    défaut.
 3. À chaque `onPageFinished`, le contenu est examiné : si le marqueur `topictitle`
@@ -256,8 +257,8 @@ Les modifications de `SyncForumUseCase` et de `SyncWorker` doivent se limiter au
 strict nécessaire : incrémentation ou remise à zéro du compteur, émission de la
 notification, reprogrammation de la tâche. Aucune réécriture de leur logique.
 
-Attention au user agent de la WebView visible, qui doit être rigoureusement identique
-à celui du module 02.
+Attention : la WebView visible ne doit imposer aucun user agent, exactement comme
+celle du module 02.
 
 Terminer par le compte rendu structuré.
 
@@ -265,7 +266,7 @@ Terminer par le compte rendu structuré.
 
 > Le module 08 est validé. Lis `00_SPECIFICATIONS_GENERALES.md` puis
 > `MODULE_09_VERIFICATION_CLOUDFLARE.md` et implémente uniquement le module 09. La
-> WebView visible doit utiliser exactement le même user agent que
+> WebView visible ne doit imposer aucun user agent, comme
 > `WebViewForumPageSource`. Limite les modifications de `SyncForumUseCase` et
 > `SyncWorker` au strict nécessaire. Respecte la liste des fichiers autorisés et
 > termine par le compte rendu demandé.

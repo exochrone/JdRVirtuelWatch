@@ -29,24 +29,17 @@ challenge et obtient le cookie `cf_clearance`.
 
 ### Nature du challenge, constatée à la mise en oeuvre
 
-Le challenge de ce forum est **interactif** : il exige qu'un humain coche une case de
-vérification. Aucun réglage de WebView, aucun délai d'attente et aucune boucle
-d'interrogation ne permet de le franchir automatiquement.
+Avec une WebView correctement configurée, le challenge de ce forum **se résout
+automatiquement**, sans aucune intervention humaine. La WebView invisible obtient donc
+son cookie `cf_clearance` toute seule, y compris sur une installation neuve.
 
-Deux conséquences structurantes :
+Ce résultat dépend entièrement d'un point : ne jamais imposer de user agent. Voir
+l'encadré ci-dessous. Avec un user agent forcé, le challenge bascule en mode
+interactif et l'application devient inutilisable en autonomie.
 
-- une WebView invisible ne peut réussir que si un cookie `cf_clearance` valide est
-  déjà présent. Sans cookie, elle retourne nécessairement `ChallengeRequired` ;
-- le cookie obtenu a une durée de vie nominale de plusieurs mois, mais Cloudflare
-  l'invalide notamment lors d'un changement d'adresse IP, ce qui arrive plusieurs fois
-  par jour sur un téléphone passant du wifi au réseau mobile.
-
-La validation manuelle par WebView visible, spécifiée au module 09, n'est donc pas un
-cas limite exceptionnel : c'est une fonction courante de l'application, à laquelle
-l'utilisateur aura recours régulièrement.
-
-Sur une installation neuve, le premier chargement échoue toujours en
-`ChallengeRequired`. C'est le comportement attendu et non une régression.
+La validation manuelle par WebView visible, spécifiée au module 09, reste un filet de
+sécurité utile pour les cas où la résolution automatique échoue, mais elle n'est pas
+sur le chemin normal.
 
 Interdictions absolues pour ce module :
 
@@ -102,9 +95,34 @@ L'interface est déclarée dans `domain.repository`, l'implémentation dans
 3. Configurer :
    - `javaScriptEnabled = true` (indispensable au challenge) ;
    - `domStorageEnabled = true` ;
-   - `userAgentString` fixé à une valeur Chrome mobile réaliste, constante et stable ;
+   - `useWideViewPort = true` et `loadWithOverviewMode = true` ;
+   - **ne pas toucher à `userAgentString`**. Voir l'encadré ci-dessous, ce point est
+     critique ;
    - `CookieManager.getInstance().setAcceptCookie(true)` et
      `setAcceptThirdPartyCookies(webView, true)`.
+
+#### Ne jamais imposer de user agent
+
+Une version antérieure de cette spécification imposait un user agent en dur, une
+chaîne annonçant Chrome 120 sur un Pixel 7. C'était une erreur, et elle a coûté cher.
+
+Cloudflare compare ce que le client déclare avec le comportement réel de son moteur de
+rendu. Une WebView Android récente qui prétend être un Chrome de deux ans constitue
+une incohérence détectable, et le challenge bascule alors en mode interactif : la case
+de vérification doit être cochée par un humain, et le cookie obtenu expire au bout
+d'une dizaine de minutes d'inactivité, avec un plafond absolu d'environ trente
+minutes.
+
+Avec le user agent par défaut de la WebView, le challenge se résout automatiquement,
+sans intervention.
+
+Le raisonnement erroné était le suivant : puisque Cloudflare lie le cookie
+`cf_clearance` au user agent, celui-ci doit rester constant, donc il faut le figer
+dans une constante. La conclusion ne suit pas. Le user agent par défaut d'une WebView
+est déjà constant pour une installation donnée, il n'y a rien à figer.
+
+Règle : ne jamais écrire dans `settings.userAgentString`, ni dans la WebView
+invisible, ni dans celle de validation manuelle.
 4. Envelopper le chargement dans un `suspendCancellableCoroutine`.
 5. Dans `onPageFinished`, interroger le DOM de façon répétée plutôt qu'après une
    attente fixe. Toutes les 500 ms, extraire le DOM :
@@ -143,19 +161,21 @@ L'interface est déclarée dans `domain.repository`, l'implémentation dans
 
 | Nom | Valeur |
 |---|---|
-| `USER_AGENT` | `Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36` |
 | `POLLING_INTERVAL_MS` | 500 |
 | `MAX_POLLING_MS` | 20000 |
 | `CHALLENGE_RETRY_DELAY_MS` | 5000 |
 | `FETCH_TIMEOUT_MS` | 50000 |
 | `SUCCESS_MARKER` | `topictitle` |
 
+Aucune constante de user agent. Voir l'encadré de la section précédente.
+
 Réglages de WebView imposés, en plus de ceux de la section précédente :
 `useWideViewPort = true` et `loadWithOverviewMode = true`. Un `viewport` mal
 configuré donne au challenge des dimensions de fenêtre incohérentes.
 
-Le user agent doit rester identique d'un appel à l'autre : Cloudflare lie le cookie
-`cf_clearance` au user agent, un changement invalide la session.
+Cloudflare lie le cookie `cf_clearance` au user agent. Comme celui de la WebView est
+constant par défaut pour une installation donnée, aucune action n'est requise : il
+suffit de ne jamais y toucher.
 
 ## Écrans
 
@@ -183,8 +203,9 @@ Une seconde section « Cloudflare » est ajoutée à l'écran de debug, contenan
 - un bouton « Valider le challenge Cloudflare » ;
 - une WebView **visible** de 700 dp de hauteur, intégrée par `AndroidView`, chargeant
   l'URL du forum 15 au clic, configurée à l'identique de
-  `WebViewForumPageSource` : même user agent, `javaScriptEnabled`,
-  `domStorageEnabled`, `useWideViewPort`, `loadWithOverviewMode`, cookies acceptés.
+  `WebViewForumPageSource` : `javaScriptEnabled`, `domStorageEnabled`,
+  `useWideViewPort`, `loadWithOverviewMode`, cookies acceptés, et surtout aucun
+  `userAgentString` imposé.
 
 L'utilisateur coche la case de vérification, la page du forum s'affiche, et le cookie
 obtenu devient immédiatement utilisable par la WebView invisible puisque le
@@ -218,8 +239,8 @@ place jusqu'au module 10, qui place l'écran de debug derrière `BuildConfig.DEB
 | Cas | Comportement attendu |
 |---|---|
 | Aucune connexion réseau | `Error` avec un message explicite, pas de crash |
-| Aucun cookie valide | `ChallengeRequired`, cas normal et fréquent |
-| Cookie invalidé par un changement d'adresse IP | `ChallengeRequired` |
+| Aucun cookie valide | Le challenge se résout automatiquement, `Success` |
+| User agent imposé par erreur | Challenge interactif, `ChallengeRequired` permanent |
 | Interrogation sans évolution du DOM | `ChallengeRequired` après `MAX_POLLING_MS` |
 | Page de forum vide ou renommée | `Error`, le marqueur `topictitle` est absent |
 | Rotation pendant un chargement | La coroutine est annulée proprement |
@@ -264,19 +285,17 @@ gradlew assembleDebug
 ### Scénario manuel
 
 1. Vérifier que l'appareil dispose d'une connexion réseau.
-2. Ouvrir l'écran de debug, section Réseau, appuyer sur « Charger le forum 15 ».
-   Résultat attendu sur une installation neuve : « Vérification requise ». C'est le
-   comportement normal, aucun cookie n'est encore présent.
-3. Aller dans la section Cloudflare, appuyer sur « Valider le challenge Cloudflare ».
-   Résultat attendu : la WebView affiche « Vérification de sécurité en cours » puis une
-   case à cocher.
-4. Cocher la case.
-   Résultat attendu : la page du forum s'affiche dans la WebView, avec la liste des
-   sujets.
-5. Revenir à la section Réseau et appuyer sur « Charger le forum 15 ».
+2. Désinstaller l'application puis la réinstaller, afin de partir sans aucun cookie.
+3. Ouvrir l'écran de debug, section Réseau, appuyer sur « Charger le forum 15 ».
    Résultat attendu : « Succès », avec un HTML de plusieurs centaines de milliers
-   d'octets. Une taille voisine de 27 000 octets signalerait une page de challenge,
-   donc un échec.
+   d'octets, sans aucune intervention manuelle. Une taille voisine de 27 000 octets
+   signalerait une page de challenge, donc un échec.
+4. Attendre une heure sans rien faire, puis recharger le forum 15.
+   Résultat attendu : « Succès ». Un échec ici signalerait que le challenge est
+   redevenu interactif, et le premier point à vérifier serait alors qu'aucun user
+   agent n'a été imposé.
+5. Vérifier que la section Cloudflare permet toujours une validation manuelle, en
+   secours.
 6. Lire l'extrait affiché.
    Résultat attendu : du HTML de forum phpBB, contenant `topictitle`.
 7. Appuyer sur « Charger le forum 16 ».

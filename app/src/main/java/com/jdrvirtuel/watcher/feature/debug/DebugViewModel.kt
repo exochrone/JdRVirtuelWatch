@@ -25,6 +25,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -45,6 +50,10 @@ class DebugViewModel @Inject constructor(
     private val _networkState = MutableStateFlow(NetworkDebugState())
     private val _parserState = MutableStateFlow(ParserDebugState())
     private val _syncState = MutableStateFlow(SyncDebugState())
+    private val _benchState = MutableStateFlow(BenchDebugState())
+
+    private var benchJob: Job? = null
+    private var benchStartTime: Long = 0
 
     val uiState: StateFlow<DebugUiState> = combine(
         forumRepository.observeForums(),
@@ -53,7 +62,8 @@ class DebugViewModel @Inject constructor(
         topicRepository.observeTotalCount(),
         _networkState,
         _parserState,
-        _syncState
+        _syncState,
+        _benchState
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -62,6 +72,7 @@ class DebugViewModel @Inject constructor(
         val network = array[4] as NetworkDebugState
         val parserState = array[5] as ParserDebugState
         val sync = array[6] as SyncDebugState
+        val bench = array[7] as BenchDebugState
 
         DebugUiState(
             forums = forums,
@@ -73,7 +84,10 @@ class DebugViewModel @Inject constructor(
             htmlSize = network.html?.length ?: 0,
             parseResult = parserState.result,
             isSyncing = sync.isSyncing,
-            lastSyncOutcome = sync.lastOutcome
+            lastSyncOutcome = sync.lastOutcome,
+            isBenchRunning = bench.isRunning,
+            benchIntervalMinutes = bench.intervalMinutes,
+            benchLogs = bench.logs
         )
     }.stateIn(
         scope = viewModelScope,
@@ -103,6 +117,80 @@ class DebugViewModel @Inject constructor(
             DebugEvent.DeleteRandomTopic -> deleteRandomTopic()
             DebugEvent.DecrementReplyCount -> decrementReplyCount()
             DebugEvent.ResetBootstrap -> resetBootstrap()
+            is DebugEvent.UpdateBenchInterval -> {
+                _benchState.update { it.copy(intervalMinutes = event.minutes) }
+            }
+            DebugEvent.StartBench -> startBench()
+            DebugEvent.StopBench -> stopBench()
+            DebugEvent.ClearBenchLogs -> {
+                _benchState.update { it.copy(logs = emptyList()) }
+            }
+            DebugEvent.CopyBenchLogs -> copyBenchLogs()
+        }
+    }
+
+    private fun startBench() {
+        if (_benchState.value.isRunning) return
+        benchStartTime = System.currentTimeMillis()
+        _benchState.update { it.copy(isRunning = true) }
+        benchJob = viewModelScope.launch {
+            while (true) {
+                runBenchIteration()
+                delay(_benchState.value.intervalMinutes * 60 * 1000L)
+            }
+        }
+    }
+
+    private fun stopBench() {
+        benchJob?.cancel()
+        benchJob = null
+        _benchState.update { it.copy(isRunning = false) }
+    }
+
+    private suspend fun runBenchIteration() {
+        val now = System.currentTimeMillis()
+        val url = "https://www.jdrvirtuel.com/viewforum.php?f=15"
+        val result = forumPageSource.fetchHtml(url)
+        
+        val entry = when (result) {
+            is FetchResult.Success -> BenchEntry(
+                timestamp = now,
+                timeSinceStartMs = now - benchStartTime,
+                result = "Succès",
+                htmlSize = result.html.length
+            )
+            FetchResult.ChallengeRequired -> BenchEntry(
+                timestamp = now,
+                timeSinceStartMs = now - benchStartTime,
+                result = "Vérification requise"
+            )
+            is FetchResult.Error -> BenchEntry(
+                timestamp = now,
+                timeSinceStartMs = now - benchStartTime,
+                result = "Erreur : ${result.message}"
+            )
+        }
+        
+        _benchState.update { it.copy(logs = listOf(entry) + it.logs) }
+    }
+
+    private fun copyBenchLogs() {
+        val logs = _benchState.value.logs
+        if (logs.isEmpty()) return
+        
+        val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        val sb = StringBuilder()
+        logs.forEach { entry ->
+            val elapsed = entry.timeSinceStartMs / 1000
+            val min = elapsed / 60
+            val sec = elapsed % 60
+            sb.append("${dateFormat.format(Date(entry.timestamp))} | +${min}m${sec}s | ${entry.result}")
+            if (entry.htmlSize != null) sb.append(" | ${entry.htmlSize} octets")
+            sb.append("\n")
+        }
+        
+        viewModelScope.launch {
+            _effect.send(DebugEffect.CopyToClipboard(sb.toString()))
         }
     }
 
@@ -218,6 +306,12 @@ class DebugViewModel @Inject constructor(
     private data class SyncDebugState(
         val isSyncing: Boolean = false,
         val lastOutcome: SyncOutcome? = null
+    )
+
+    private data class BenchDebugState(
+        val isRunning: Boolean = false,
+        val intervalMinutes: Int = 5,
+        val logs: List<BenchEntry> = emptyList()
     )
 
     private fun insertTestTopic() {

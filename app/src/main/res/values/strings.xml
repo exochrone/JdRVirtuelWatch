@@ -62,6 +62,15 @@
     <string name="debug_sync_challenge">CHALLENGE</string>
     <string name="debug_sync_error">ERREUR</string>
 
+    <!-- Debug Cloudflare Bench -->
+    <string name="debug_bench_section">Banc de test Cloudflare</string>
+    <string name="debug_bench_interval">Intervalle (minutes)</string>
+    <string name="debug_bench_start">Démarrer le banc de test</string>
+    <string name="debug_bench_stop">Arrêter</string>
+    <string name="debug_bench_reset">Réinitialiser le journal</string>
+    <string name="debug_bench_copy">Copier le journal</string>
+    <string name="debug_bench_empty">Journal vide</string>
+
     <!-- Accessibility -->
     <string name="back">Retour</string>
 </resources>

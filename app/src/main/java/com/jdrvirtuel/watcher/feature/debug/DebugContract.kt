@@ -23,7 +23,19 @@ data class DebugUiState(
 
     // Sync Debug
     val isSyncing: Boolean = false,
-    val lastSyncOutcome: SyncOutcome? = null
+    val lastSyncOutcome: SyncOutcome? = null,
+
+    // Cloudflare Test Bench
+    val isBenchRunning: Boolean = false,
+    val benchIntervalMinutes: Int = 5,
+    val benchLogs: List<BenchEntry> = emptyList()
+)
+
+data class BenchEntry(
+    val timestamp: Long,
+    val timeSinceStartMs: Long,
+    val result: String,
+    val htmlSize: Int? = null
 )
 
 sealed interface DebugEvent {
@@ -45,6 +57,13 @@ sealed interface DebugEvent {
     data object DeleteRandomTopic : DebugEvent
     data object DecrementReplyCount : DebugEvent
     data object ResetBootstrap : DebugEvent
+
+    // Cloudflare Test Bench
+    data class UpdateBenchInterval(val minutes: Int) : DebugEvent
+    data object StartBench : DebugEvent
+    data object StopBench : DebugEvent
+    data object ClearBenchLogs : DebugEvent
+    data object CopyBenchLogs : DebugEvent
 }
 
 sealed interface DebugEffect {

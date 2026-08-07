@@ -1,8 +1,10 @@
 package com.jdrvirtuel.watcher.feature.debug
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.view.WindowManager
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,11 +35,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -80,11 +86,21 @@ fun DebugScreen(
                 DebugEffect.NavigateBack -> onNavigateBack()
                 is DebugEffect.CopyToClipboard -> {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("HTML Content", effect.text)
+                    val clip = ClipData.newPlainText("Debug Content", effect.text)
                     clipboard.setPrimaryClip(clip)
-                    Toast.makeText(context, "HTML copié", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Copié dans le presse-papier", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    DisposableEffect(uiState.isBenchRunning) {
+        val window = (context as? Activity)?.window
+        if (uiState.isBenchRunning) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
@@ -132,6 +148,13 @@ fun DebugScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
 
             LazyColumn(modifier = Modifier.weight(1f)) {
+                item {
+                    BenchDebugSection(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent
+                    )
+                }
+
                 item {
                     SyncDebugSection(
                         uiState = uiState,
@@ -221,6 +244,108 @@ fun DebugScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun BenchDebugSection(
+    uiState: DebugUiState,
+    onEvent: (DebugEvent) -> Unit
+) {
+    Column {
+        Text(
+            text = stringResource(R.string.debug_bench_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = Dimens.sm)
+        )
+
+        OutlinedTextField(
+            value = uiState.benchIntervalMinutes.toString(),
+            onValueChange = { newValue ->
+                newValue.toIntOrNull()?.let { onEvent(DebugEvent.UpdateBenchInterval(it)) }
+            },
+            label = { Text(stringResource(R.string.debug_bench_interval)) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.isBenchRunning
+        )
+
+        Spacer(modifier = Modifier.height(Dimens.sm))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onEvent(DebugEvent.StartBench) },
+                enabled = !uiState.isBenchRunning,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_bench_start))
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.StopBench) },
+                enabled = uiState.isBenchRunning,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_bench_stop))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.sm))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = { onEvent(DebugEvent.ClearBenchLogs) },
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_bench_reset))
+            }
+            Spacer(modifier = Modifier.padding(Dimens.xs))
+            Button(
+                onClick = { onEvent(DebugEvent.CopyBenchLogs) },
+                enabled = uiState.benchLogs.isNotEmpty(),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.debug_bench_copy))
+            }
+        }
+
+        if (uiState.benchLogs.isEmpty()) {
+            Text(
+                text = stringResource(R.string.debug_bench_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = Dimens.md)
+            )
+        } else {
+            val dateFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(vertical = Dimens.sm)
+            ) {
+                LazyColumn(modifier = Modifier.padding(Dimens.sm)) {
+                    items(uiState.benchLogs) { entry ->
+                        val elapsed = entry.timeSinceStartMs / 1000
+                        val min = elapsed / 60
+                        val sec = elapsed % 60
+                        val logText = "${dateFormat.format(Date(entry.timestamp))} | +${min}m${sec}s | ${entry.result}" +
+                                (entry.htmlSize?.let { " | $it octets" } ?: "")
+                        
+                        Text(
+                            text = logText,
+                            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                            color = when {
+                                entry.result == "Succès" -> MaterialTheme.colorScheme.primary
+                                entry.result == "Vérification requise" -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
     }
 }
 
@@ -589,7 +714,6 @@ fun NetworkDebugSection(
                         WebView(context).apply {
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
-                            settings.userAgentString = WebViewConstants.USER_AGENT
                             settings.useWideViewPort = true
                             settings.loadWithOverviewMode = true
                             

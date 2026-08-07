@@ -64,7 +64,6 @@ class WebViewForumPageSource @Inject constructor(
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
-            userAgentString = WebViewConstants.USER_AGENT
             useWideViewPort = true
             loadWithOverviewMode = true
         }
