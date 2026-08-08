@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
+import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.SyncSource
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
@@ -55,6 +56,15 @@ class SyncWorker @AssistedInject constructor(
                 else -> Result.success()
             }
         } catch (e: Exception) {
+            val errorOutcomes = listOf(
+                SyncOutcome(forumId = 15, status = SyncStatus.ERROR, errorMessage = e.message),
+                SyncOutcome(forumId = 16, status = SyncStatus.ERROR, errorMessage = e.message)
+            )
+            syncLog.addEntry(source, errorOutcomes)
+            
+            if (source == SyncSource.TEST && appPreferences.isTestModeEnabled.first()) {
+                syncSchedulerProvider.get().scheduleNextTestRun()
+            }
             Result.retry()
         }
     }

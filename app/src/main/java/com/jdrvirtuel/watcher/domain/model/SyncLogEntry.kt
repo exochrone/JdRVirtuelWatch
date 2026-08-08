@@ -13,7 +13,9 @@ enum class SyncSource {
 data class ForumSyncResult(
     val forumName: String,
     val status: SyncStatus,
-    val newTopicsCount: Int
+    val newTopicsCount: Int,
+    val insertedCount: Int = 0,
+    val updatedCount: Int = 0
 )
 
 @Serializable

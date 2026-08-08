@@ -130,4 +130,19 @@
     <string name="forum_detail_watch_enabled">Surveillance activée</string>
     <string name="forum_detail_watch_disabled">Surveillance désactivée</string>
     <string name="forum_detail_no_browser">Aucun navigateur disponible</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_new_topics">Nouveaux sujets</string>
+    <string name="notification_channel_new_topics_desc">Avertit quand une nouvelle proposition de partie est publiée.</string>
+    <string name="notification_channel_new_replies">Nouvelles réponses</string>
+    <string name="notification_channel_new_replies_desc">Avertit quand une réponse est publiée sur un sujet surveillé.</string>
+    <string name="notification_channel_verification">Vérification requise</string>
+    <string name="notification_channel_verification_desc">Avertit quand l\'accès au forum est bloqué par Cloudflare.</string>
+    <string name="notification_new_reply_body">Nouvelle réponse : %1$s</string>
+    <plurals name="notification_summary_more">
+        <item quantity="one">%1$d nouveauté</item>
+        <item quantity="other">%1$d nouveautés</item>
+    </plurals>
+    <string name="notification_permission_title">Notifications désactivées</string>
+    <string name="notification_permission_enable">Activer</string>
 </resources>

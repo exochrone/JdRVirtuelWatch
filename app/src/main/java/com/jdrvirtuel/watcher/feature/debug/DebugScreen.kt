@@ -655,7 +655,12 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
                         }
                         Text("${df.format(Date(entry.timestampMs))} · $sourceStr", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                         entry.forumResults.forEach { res ->
-                            Text("   ${res.forumName} : ${res.status} · Nouveaux : ${res.newTopicsCount}", style = MaterialTheme.typography.bodySmall)
+                            val details = buildString {
+                                append("   ${res.forumName} : ${res.status} · Nouveaux : ${res.newTopicsCount}")
+                                if (res.insertedCount > 0) append(" · Insérés : ${res.insertedCount}")
+                                if (res.updatedCount > 0) append(" · Màj : ${res.updatedCount}")
+                            }
+                            Text(details, style = MaterialTheme.typography.bodySmall)
                         }
                         Spacer(modifier = Modifier.height(Dimens.xs))
                     }

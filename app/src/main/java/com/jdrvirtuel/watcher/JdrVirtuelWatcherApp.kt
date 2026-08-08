@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.jdrvirtuel.watcher.core.di.ApplicationScope
 import com.jdrvirtuel.watcher.data.local.db.DatabaseSeeder
+import com.jdrvirtuel.watcher.notification.NotificationChannels
 import com.jdrvirtuel.watcher.work.SyncScheduler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -33,6 +34,7 @@ class JdrVirtuelWatcherApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        NotificationChannels.create(this)
         applicationScope.launch {
             databaseSeeder.seedIfEmpty()
         }

@@ -38,7 +38,9 @@ class SyncLog @Inject constructor(
             ForumSyncResult(
                 forumName = name,
                 status = outcome.status,
-                newTopicsCount = outcome.newTopics.size + outcome.newReplies.size
+                newTopicsCount = outcome.newTopics.size + outcome.newReplies.size,
+                insertedCount = outcome.insertedCount,
+                updatedCount = outcome.updatedCount
             )
         }
 

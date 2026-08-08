@@ -1,7 +1,7 @@
 package com.jdrvirtuel.watcher.core.di
 
-import com.jdrvirtuel.watcher.data.repository.NoOpNewContentNotifier
 import com.jdrvirtuel.watcher.domain.repository.NewContentNotifier
+import com.jdrvirtuel.watcher.notification.SystemNewContentNotifier
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,6 +15,6 @@ abstract class SyncModule {
     @Binds
     @Singleton
     abstract fun bindNewContentNotifier(
-        noOpNewContentNotifier: NoOpNewContentNotifier
+        systemNewContentNotifier: SystemNewContentNotifier
     ): NewContentNotifier
 }
