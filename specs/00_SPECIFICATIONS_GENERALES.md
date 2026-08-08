@@ -407,6 +407,7 @@ L'utilisateur signale explicitement à Gemini le passage d'un module au suivant.
 | 08 | Notifications | 04, 07 |
 | 09 | Vérification Cloudflare | 02, 08 |
 | 10 | Finitions | tous |
+| 11 | Diagnostic au démarrage | 10 |
 
 ### 6.3 Écran de debug
 

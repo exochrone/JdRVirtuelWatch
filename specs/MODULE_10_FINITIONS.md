@@ -57,6 +57,13 @@ Applications imposées :
   - section « Données » : le nombre de sujets stockés, un bouton « Effacer les données
     locales » avec confirmation, qui vide les sujets et remet les forums à l'état non
     amorcé ;
+  - section « Diagnostic » : un lien rouvrant l'écran de diagnostic des réglages
+    système, créé au module 11. Cette entrée est ajoutée par le module 11, pas par le
+    module 10 ;
+  - section « Journal des synchronisations », dépliable, refermée par défaut :
+    les 50 dernières entrées de `SyncLog`, la plus récente en haut, au format défini
+    au module 07. Cette section n'est pas un outil de développement, elle reste
+    présente en version finale. Un bouton « Effacer le journal » avec confirmation ;
   - section « À propos » : nom de l'application, numéro de version issu de
     `BuildConfig.VERSION_NAME`, et une phrase rappelant que l'application se contente
     de consulter des pages publiques du forum.
@@ -134,6 +141,7 @@ app/src/main/java/com/jdrvirtuel/watcher/core/ui/component/ErrorState.kt
 app/src/main/java/com/jdrvirtuel/watcher/feature/settings/SettingsScreen.kt
 app/src/main/java/com/jdrvirtuel/watcher/feature/settings/SettingsViewModel.kt
 app/src/main/java/com/jdrvirtuel/watcher/feature/settings/SettingsContract.kt
+app/src/main/java/com/jdrvirtuel/watcher/feature/settings/SyncLogSection.kt
 app/src/main/java/com/jdrvirtuel/watcher/feature/home/HomeScreen.kt
 app/src/main/java/com/jdrvirtuel/watcher/feature/forumdetail/ForumDetailScreen.kt
 app/src/main/java/com/jdrvirtuel/watcher/navigation/Routes.kt

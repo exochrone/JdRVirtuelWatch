@@ -2,6 +2,7 @@ package com.jdrvirtuel.watcher.work
 
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
+import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -9,8 +10,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
+import com.jdrvirtuel.watcher.domain.model.SyncSource
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,9 +32,14 @@ class SyncScheduler @Inject constructor(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
+        val inputData = Data.Builder()
+            .putString("sync_source", SyncSource.PERIODIC.name)
+            .build()
+
         val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .setInputData(inputData)
             .build()
 
         workManager.enqueueUniquePeriodicWork(
@@ -48,8 +54,13 @@ class SyncScheduler @Inject constructor(
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
+        val inputData = Data.Builder()
+            .putString("sync_source", SyncSource.MANUAL.name)
+            .build()
+
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setConstraints(constraints)
+            .setInputData(inputData)
             .build()
 
         workManager.enqueueUniqueWork(
@@ -84,9 +95,15 @@ class SyncScheduler @Inject constructor(
         if (!appPreferences.isTestModeEnabled.first()) return
 
         val interval = appPreferences.testModeIntervalMinutes.first()
+
+        val inputData = Data.Builder()
+            .putString("sync_source", SyncSource.TEST.name)
+            .build()
+
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInitialDelay(interval.toLong(), TimeUnit.MINUTES)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInputData(inputData)
             .build()
 
         workManager.enqueueUniqueWork(

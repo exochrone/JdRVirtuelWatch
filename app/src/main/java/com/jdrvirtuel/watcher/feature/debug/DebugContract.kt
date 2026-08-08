@@ -4,6 +4,7 @@ import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.ParseResult
 import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.Topic
+import com.jdrvirtuel.watcher.domain.model.SyncLogEntry
 import com.jdrvirtuel.watcher.work.TestModeEntry
 
 data class DebugUiState(
@@ -43,7 +44,8 @@ data class DebugUiState(
     val workInfoState: String? = null,
     val testModeEnabled: Boolean = false,
     val testModeIntervalMinutes: Int = 2,
-    val testModeLog: List<TestModeEntry> = emptyList()
+    val testModeLog: List<TestModeEntry> = emptyList(),
+    val syncLog: List<SyncLogEntry> = emptyList()
 )
 
 data class BrowserPackageUiModel(

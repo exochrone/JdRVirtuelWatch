@@ -91,7 +91,8 @@ class DebugViewModel @Inject constructor(
         periodicWorkInfo,
         appPreferences.isTestModeEnabled,
         appPreferences.testModeIntervalMinutes,
-        appPreferences.testModeLog
+        appPreferences.testModeLog,
+        appPreferences.syncLog
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -107,10 +108,21 @@ class DebugViewModel @Inject constructor(
         val testEnabled = array[11] as Boolean
         val testInterval = array[12] as Int
         val testLogRaw = array[13] as String?
+        val syncLogRaw = array[14] as String?
 
         val testLog = if (testLogRaw != null) {
             try {
                 kotlinx.serialization.json.Json.decodeFromString<List<com.jdrvirtuel.watcher.work.TestModeEntry>>(testLogRaw)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
+
+        val syncLog = if (syncLogRaw != null) {
+            try {
+                kotlinx.serialization.json.Json.decodeFromString<List<com.jdrvirtuel.watcher.domain.model.SyncLogEntry>>(syncLogRaw)
             } catch (e: Exception) {
                 emptyList()
             }
@@ -141,7 +153,8 @@ class DebugViewModel @Inject constructor(
             workInfoState = workState,
             testModeEnabled = testEnabled,
             testModeIntervalMinutes = testInterval,
-            testModeLog = testLog
+            testModeLog = testLog,
+            syncLog = syncLog
         )
     }.stateIn(
         scope = viewModelScope,

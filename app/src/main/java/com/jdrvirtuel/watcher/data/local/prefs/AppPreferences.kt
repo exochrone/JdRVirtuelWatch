@@ -24,6 +24,7 @@ class AppPreferences @Inject constructor(
         private val TEST_MODE_ENABLED = booleanPreferencesKey("test_mode_enabled")
         private val TEST_MODE_INTERVAL_MINUTES = intPreferencesKey("test_mode_interval_minutes")
         private val TEST_MODE_LOG = stringPreferencesKey("test_mode_log")
+        private val SYNC_LOG = stringPreferencesKey("sync_log")
     }
 
     val consecutiveChallengeFailures: Flow<Int> = dataStore.data
@@ -84,6 +85,19 @@ class AppPreferences @Inject constructor(
                 preferences.remove(TEST_MODE_LOG)
             } else {
                 preferences[TEST_MODE_LOG] = log
+            }
+        }
+    }
+
+    val syncLog: Flow<String?> = dataStore.data
+        .map { preferences -> preferences[SYNC_LOG] }
+
+    suspend fun setSyncLog(log: String?) {
+        dataStore.edit { preferences ->
+            if (log == null) {
+                preferences.remove(SYNC_LOG)
+            } else {
+                preferences[SYNC_LOG] = log
             }
         }
     }

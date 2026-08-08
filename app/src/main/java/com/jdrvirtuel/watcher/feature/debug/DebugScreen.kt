@@ -41,6 +41,7 @@ import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import com.jdrvirtuel.watcher.core.util.BrowserLauncher
 import com.jdrvirtuel.watcher.data.remote.WebViewConstants
+import com.jdrvirtuel.watcher.domain.model.SyncSource
 import com.jdrvirtuel.watcher.domain.model.*
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -636,6 +637,32 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
                     }
                 }
             }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
+
+        Text("Journal permanent (50 max) :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        if (uiState.syncLog.isNotEmpty()) {
+            val df = remember { SimpleDateFormat("dd/MM/yy - HH:mm:ss", Locale.getDefault()) }
+            Card(modifier = Modifier.fillMaxWidth().height(300.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs)) {
+                    items(uiState.syncLog) { entry ->
+                        val sourceStr = when(entry.source) {
+                            SyncSource.MANUAL -> "Manuelle"
+                            SyncSource.PERIODIC -> "Automatique"
+                            SyncSource.TEST -> "Test"
+                            else -> "Inconnue"
+                        }
+                        Text("${df.format(Date(entry.timestampMs))} · $sourceStr", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                        entry.forumResults.forEach { res ->
+                            Text("   ${res.forumName} : ${res.status} · Nouveaux : ${res.newTopicsCount}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Spacer(modifier = Modifier.height(Dimens.xs))
+                    }
+                }
+            }
+        } else {
+            Text("Aucune entrée", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

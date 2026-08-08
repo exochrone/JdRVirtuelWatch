@@ -153,6 +153,45 @@ Une section « Tâche de fond » est ajoutée :
 - un bouton « Reprogrammer la tâche », qui annule puis reprogramme, utile en cas de
   doute.
 
+### Journal permanent des synchronisations
+
+Toute exécution de `SyncWorker` est journalisée, quelle que soit son origine et
+quelle que soit son issue. Ce journal n'est pas un outil de développement : il est
+conservé en version finale et présenté dans l'écran de réglages du module 10.
+
+Chaque requête de travail porte une donnée d'entrée `sync_source` valant `MANUAL`,
+`PERIODIC` ou `TEST`. Le Worker la lit et l'inscrit dans l'entrée de journal. Sans
+cela, il est impossible de distinguer les sources, et le mode test contamine les
+mesures de la tâche périodique.
+
+Une entrée de journal contient :
+
+| Champ | Contenu |
+|---|---|
+| `timestampMs` | Instant de l'exécution |
+| `source` | `MANUAL`, `PERIODIC` ou `TEST` |
+| `results` | Une ligne par forum : nom du forum, issue, nombre de nouveaux sujets |
+
+Le nom du forum est celui affiché à l'utilisateur, « Oneshots » ou « Campagnes », et
+non son identifiant numérique.
+
+Le journal conserve les **50 entrées les plus récentes**, les plus anciennes étant
+supprimées à chaque ajout. Il est stocké dans `AppPreferences` sous la clé `sync_log`,
+sérialisé en JSON via `kotlinx.serialization`, déjà disponible depuis le module 00.
+Un stockage en mémoire ne conviendrait pas, le Worker s'exécutant hors de toute
+activité.
+
+Format d'affichage attendu, défini ici et appliqué au module 10 :
+
+```
+05/08/26 - 14:52:03  ·  Automatique
+   Oneshots : Succès · Nouveaux : 2
+   Campagnes : Échec
+```
+
+La date suit le format `JJ/MM/AA - hh:mm:ss`. La source est traduite en clair :
+« Manuelle », « Automatique », « Test ».
+
 ### Mode test accéléré
 
 Toujours dans la section « Tâche de fond », un second bloc permet de valider le
@@ -214,6 +253,8 @@ Aucune modification du schéma.
 | Challenge Cloudflare | `Result.success()`, l'incident est enregistré sur le forum |
 | Double programmation | `KEEP` empêche la duplication |
 | Mode test actif au redémarrage de l'application | Il reste actif, l'état est persistant |
+| Journal atteignant 50 entrées | Les plus anciennes sont supprimées, aucune croissance illimitée |
+| Tâche périodique s'exécutant pendant le mode test | Journalisée comme `PERIODIC`, ne replanifie pas le mode test |
 | Mode test et tâche périodique simultanés | Les deux tournent, le `Mutex` du module 04 les sérialise |
 | Économiseur d'énergie constructeur actif | La tâche peut ne jamais s'exécuter, voir la section dédiée |
 | Économiseur de batterie actif | L'exécution peut être suspendue, comportement système |
@@ -227,6 +268,8 @@ app/src/main/AndroidManifest.xml             désactivation de l'initialiseur pa
 app/src/main/java/com/jdrvirtuel/watcher/work/SyncWorker.kt
 app/src/main/java/com/jdrvirtuel/watcher/work/SyncScheduler.kt
 app/src/main/java/com/jdrvirtuel/watcher/work/TestModeLog.kt
+app/src/main/java/com/jdrvirtuel/watcher/work/SyncLog.kt
+app/src/main/java/com/jdrvirtuel/watcher/domain/model/SyncLogEntry.kt
 app/src/main/java/com/jdrvirtuel/watcher/data/local/prefs/AppPreferences.kt  ajout des cles du mode test
 app/src/main/java/com/jdrvirtuel/watcher/core/di/WorkModule.kt
 app/src/main/java/com/jdrvirtuel/watcher/JdrVirtuelWatcherApp.kt
@@ -242,6 +285,7 @@ KSP.
 
 ## Contrat exposé aux modules suivants
 
+- `SyncLog`, dont le module 10 affiche le contenu dans l'écran de réglages.
 - `SyncScheduler`, utilisé par le module 09 pour espacer les tentatives après des
   échecs répétés de vérification.
 - `SyncWorker`, qui portera l'appel aux notifications réelles une fois le module 08
