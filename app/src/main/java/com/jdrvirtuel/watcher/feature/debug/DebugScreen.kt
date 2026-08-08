@@ -110,6 +110,11 @@ fun DebugScreen(
                 }
             }
             item {
+                DebugCollapsibleSection(title = stringResource(R.string.debug_work_section), initialExpanded = true) {
+                    WorkSection(uiState, viewModel::onEvent)
+                }
+            }
+            item {
                 DebugCollapsibleSection(title = stringResource(R.string.debug_database_section)) {
                     DatabaseSection(uiState, viewModel::onEvent)
                 }
@@ -570,4 +575,67 @@ fun ParsedTopicDebugItem(topic: ParsedTopic, df: SimpleDateFormat) {
 @Composable
 fun FlagText(label: String, active: Boolean) {
     Text(text = "$label: ${if (active) "Y" else "N"} ", style = MaterialTheme.typography.bodySmall, color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
+    Column {
+        Text("Tâche périodique (15 min) :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text("État : ${uiState.workInfoState ?: "Inconnu"}", style = MaterialTheme.typography.bodySmall)
+        
+        val lastSync = uiState.forums.maxOfOrNull { it.lastSyncAt ?: 0L } ?: 0L
+        val lastSyncStr = if (lastSync > 0) {
+            SimpleDateFormat("dd/MM HH:mm:ss", Locale.getDefault()).format(Date(lastSync))
+        } else "Jamais"
+        Text("Dernière exécution : $lastSyncStr", style = MaterialTheme.typography.bodySmall)
+
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.xs), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.TriggerImmediateSync) }, modifier = Modifier.weight(1f)) {
+                Text("Déclencher")
+            }
+            Button(onClick = { onEvent(DebugEvent.ReschedulePeriodicSync) }, modifier = Modifier.weight(1f)) {
+                Text("Reprogrammer")
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
+        
+        Text("Mode test accéléré :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text("État : ${if (uiState.testModeEnabled) "ACTIF" else "Inactif"}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = if (uiState.testModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+
+        OutlinedTextField(
+            value = uiState.testModeIntervalMinutes.toString(),
+            onValueChange = { onEvent(DebugEvent.UpdateTestModeInterval(it.toIntOrNull() ?: 2)) },
+            label = { Text("Intervalle (minutes)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.testModeEnabled
+        )
+
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.xs), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.StartTestMode) }, enabled = !uiState.testModeEnabled, modifier = Modifier.weight(1f)) {
+                Text("Démarrer")
+            }
+            Button(onClick = { onEvent(DebugEvent.StopTestMode) }, enabled = uiState.testModeEnabled, modifier = Modifier.weight(1f)) {
+                Text("Arrêter")
+            }
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
+            Button(onClick = { onEvent(DebugEvent.ClearTestModeLog) }, modifier = Modifier.weight(1f)) {
+                Text("Vider Log")
+            }
+        }
+
+        if (uiState.testModeLog.isNotEmpty()) {
+            Text("Journal (récent en haut) :", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = Dimens.sm))
+            Card(modifier = Modifier.fillMaxWidth().height(200.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs)) {
+                    items(uiState.testModeLog) { entry ->
+                        Text(entry.format(), style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
+                    }
+                }
+            }
+        }
+    }
 }

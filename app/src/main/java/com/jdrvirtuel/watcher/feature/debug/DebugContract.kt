@@ -4,6 +4,7 @@ import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.ParseResult
 import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.Topic
+import com.jdrvirtuel.watcher.work.TestModeEntry
 
 data class DebugUiState(
     val forums: List<Forum> = emptyList(),
@@ -36,7 +37,13 @@ data class DebugUiState(
     val ctCompatiblePackages: List<BrowserPackageUiModel> = emptyList(),
     val installedBrowserPackages: List<String> = emptyList(),
     val preferredBrowserPackage: String? = null,
-    val lastBrowserTestResult: String? = null
+    val lastBrowserTestResult: String? = null,
+
+    // Background Task Debug
+    val workInfoState: String? = null,
+    val testModeEnabled: Boolean = false,
+    val testModeIntervalMinutes: Int = 2,
+    val testModeLog: List<TestModeEntry> = emptyList()
 )
 
 data class BrowserPackageUiModel(
@@ -88,6 +95,14 @@ sealed interface DebugEvent {
     data object TestBrowserLauncher : DebugEvent
     data object TestBraveCustomTabs : DebugEvent
     data object TestActionViewSimple : DebugEvent
+
+    // Background Task Debug
+    data object TriggerImmediateSync : DebugEvent
+    data object ReschedulePeriodicSync : DebugEvent
+    data class UpdateTestModeInterval(val minutes: Int) : DebugEvent
+    data object StartTestMode : DebugEvent
+    data object StopTestMode : DebugEvent
+    data object ClearTestModeLog : DebugEvent
 }
 
 sealed interface DebugEffect {

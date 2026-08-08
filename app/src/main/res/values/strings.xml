@@ -90,6 +90,7 @@
     <!-- Debug Base de données -->
     <string name="debug_database_section">Base de données</string>
     <string name="debug_cloudflare_section">Cloudflare</string>
+    <string name="debug_work_section">Tâche de fond</string>
     <string name="back">Retour</string>
 
     <!-- Home -->

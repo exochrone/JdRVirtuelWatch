@@ -9,6 +9,8 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.browser.customtabs.CustomTabsService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.jdrvirtuel.watcher.core.util.BrowserLauncher
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.data.parser.TopicListParser
@@ -22,6 +24,8 @@ import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
 import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
+import com.jdrvirtuel.watcher.work.SyncScheduler
+import com.jdrvirtuel.watcher.work.TestModeLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -29,6 +33,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -50,6 +56,9 @@ class DebugViewModel @Inject constructor(
     private val syncForumUseCase: SyncForumUseCase,
     private val syncAllForumsUseCase: SyncAllForumsUseCase,
     val appPreferences: AppPreferences,
+    private val workManager: WorkManager,
+    private val syncScheduler: SyncScheduler,
+    private val testModeLog: TestModeLog,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -61,6 +70,9 @@ class DebugViewModel @Inject constructor(
     private val _syncState = MutableStateFlow(SyncDebugState())
     private val _benchState = MutableStateFlow(BenchDebugState())
     private val _browserState = MutableStateFlow(BrowserDebugState())
+
+    private val periodicWorkInfo = workManager.getWorkInfosForUniqueWorkFlow("periodic_sync")
+        .map { it.firstOrNull()?.state?.name }
 
     private var benchJob: Job? = null
     private var benchStartTime: Long = 0
@@ -75,7 +87,11 @@ class DebugViewModel @Inject constructor(
         _syncState,
         _benchState,
         _browserState,
-        appPreferences.preferredBrowserPackage
+        appPreferences.preferredBrowserPackage,
+        periodicWorkInfo,
+        appPreferences.isTestModeEnabled,
+        appPreferences.testModeIntervalMinutes,
+        appPreferences.testModeLog
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -87,6 +103,20 @@ class DebugViewModel @Inject constructor(
         val bench = array[7] as BenchDebugState
         val browser = array[8] as BrowserDebugState
         val preferredBrowser = array[9] as String?
+        val workState = array[10] as String?
+        val testEnabled = array[11] as Boolean
+        val testInterval = array[12] as Int
+        val testLogRaw = array[13] as String?
+
+        val testLog = if (testLogRaw != null) {
+            try {
+                kotlinx.serialization.json.Json.decodeFromString<List<com.jdrvirtuel.watcher.work.TestModeEntry>>(testLogRaw)
+            } catch (e: Exception) {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
 
         DebugUiState(
             forums = forums,
@@ -107,7 +137,11 @@ class DebugViewModel @Inject constructor(
             ctCompatiblePackages = browser.ctCompatiblePackages,
             installedBrowserPackages = browser.installedBrowserPackages,
             preferredBrowserPackage = preferredBrowser,
-            lastBrowserTestResult = browser.lastTestResult
+            lastBrowserTestResult = browser.lastTestResult,
+            workInfoState = workState,
+            testModeEnabled = testEnabled,
+            testModeIntervalMinutes = testInterval,
+            testModeLog = testLog
         )
     }.stateIn(
         scope = viewModelScope,
@@ -161,6 +195,26 @@ class DebugViewModel @Inject constructor(
             DebugEvent.TestBrowserLauncher -> testBrowserLauncher()
             DebugEvent.TestBraveCustomTabs -> testBraveCustomTabs()
             DebugEvent.TestActionViewSimple -> testActionViewSimple()
+            DebugEvent.TriggerImmediateSync -> syncScheduler.triggerImmediateSync()
+            DebugEvent.ReschedulePeriodicSync -> syncScheduler.reschedulePeriodicSync()
+            is DebugEvent.UpdateTestModeInterval -> {
+                viewModelScope.launch { appPreferences.setTestModeIntervalMinutes(event.minutes) }
+            }
+            DebugEvent.StartTestMode -> {
+                viewModelScope.launch {
+                    syncScheduler.startTestMode(uiState.value.testModeIntervalMinutes)
+                }
+            }
+            DebugEvent.StopTestMode -> {
+                viewModelScope.launch {
+                    syncScheduler.stopTestMode()
+                }
+            }
+            DebugEvent.ClearTestModeLog -> {
+                viewModelScope.launch {
+                    testModeLog.clear()
+                }
+            }
         }
     }
 
