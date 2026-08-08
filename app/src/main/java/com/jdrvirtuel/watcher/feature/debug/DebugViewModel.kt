@@ -75,7 +75,7 @@ class DebugViewModel @Inject constructor(
     private val _browserState = MutableStateFlow(BrowserDebugState())
 
     private val periodicWorkInfo = workManager.getWorkInfosForUniqueWorkFlow("periodic_sync")
-        .map { it.firstOrNull()?.state?.name }
+        .map { it.firstOrNull() }
 
     private var benchJob: Job? = null
     private var benchStartTime: Long = 0
@@ -97,7 +97,8 @@ class DebugViewModel @Inject constructor(
         appPreferences.testModeLog,
         appPreferences.syncLog,
         challengeRepository.consecutiveFailures,
-        challengeRepository.lastPromptAt
+        challengeRepository.lastPromptAt,
+        appPreferences.simulateChallenge
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -109,13 +110,17 @@ class DebugViewModel @Inject constructor(
         val bench = array[7] as BenchDebugState
         val browser = array[8] as BrowserDebugState
         val preferredBrowser = array[9] as String?
-        val workState = array[10] as String?
+        val workInfo = array[10] as WorkInfo?
         val testEnabled = array[11] as Boolean
         val testInterval = array[12] as Int
         val testLogRaw = array[13] as String?
         val syncLogRaw = array[14] as String?
         val failures = array[15] as Int
         val lastPrompt = array[16] as Long
+        val simulateChallenge = array[17] as Boolean
+
+        val workState = workInfo?.state?.name
+        val workPeriod = workInfo?.periodicityInfo?.repeatIntervalMillis?.let { it / 60000 }
 
         val testLog = if (testLogRaw != null) {
             try {
@@ -158,12 +163,14 @@ class DebugViewModel @Inject constructor(
             preferredBrowserPackage = preferredBrowser,
             lastBrowserTestResult = browser.lastTestResult,
             workInfoState = workState,
+            workPeriodMinutes = workPeriod,
             testModeEnabled = testEnabled,
             testModeIntervalMinutes = testInterval,
             testModeLog = testLog,
             syncLog = syncLog,
             consecutiveFailures = failures,
-            lastPromptAt = lastPrompt
+            lastPromptAt = lastPrompt,
+            simulateChallenge = simulateChallenge
         )
     }.stateIn(
         scope = viewModelScope,
@@ -251,6 +258,11 @@ class DebugViewModel @Inject constructor(
             DebugEvent.ResetFailures -> {
                 viewModelScope.launch {
                     challengeRepository.resetFailures()
+                }
+            }
+            is DebugEvent.ToggleSimulateChallenge -> {
+                viewModelScope.launch {
+                    appPreferences.setSimulateChallenge(event.enabled)
                 }
             }
         }

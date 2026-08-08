@@ -347,6 +347,22 @@ fun CloudflareSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
         val lastPrompt = if (uiState.lastPromptAt > 0) dateFormat.format(Date(uiState.lastPromptAt)) else "Jamais"
         Text("Dernière notification : $lastPrompt", style = MaterialTheme.typography.bodySmall)
 
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Simuler un blocage Cloudflare", modifier = Modifier.weight(1f))
+            Switch(
+                checked = uiState.simulateChallenge,
+                onCheckedChange = { onEvent(DebugEvent.ToggleSimulateChallenge(it)) }
+            )
+        }
+        if (uiState.simulateChallenge) {
+            Text(
+                "BLOCAGE SIMULÉ ACTIF",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
         FlowRow(
             modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.sm),
             horizontalArrangement = Arrangement.spacedBy(Dimens.xs)
@@ -603,6 +619,9 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
     Column {
         Text("Tâche périodique (15 min) :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
         Text("État : ${uiState.workInfoState ?: "Inconnu"}", style = MaterialTheme.typography.bodySmall)
+        uiState.workPeriodMinutes?.let {
+            Text(stringResource(R.string.debug_work_period, it), style = MaterialTheme.typography.bodySmall)
+        }
         
         val lastSync = uiState.forums.maxOfOrNull { it.lastSyncAt ?: 0L } ?: 0L
         val lastSyncStr = if (lastSync > 0) {

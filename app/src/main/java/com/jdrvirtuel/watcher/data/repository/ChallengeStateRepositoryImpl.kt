@@ -22,6 +22,7 @@ class ChallengeStateRepositoryImpl @Inject constructor(
 
     override suspend fun resetFailures() {
         appPreferences.setConsecutiveChallengeFailures(0)
+        appPreferences.setLastChallengePromptAt(0L)
     }
 
     override suspend fun updateLastPromptAt(timestamp: Long) {

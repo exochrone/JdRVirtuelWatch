@@ -10,11 +10,13 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.FetchResult
 import com.jdrvirtuel.watcher.domain.repository.ForumPageSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -25,10 +27,15 @@ import kotlin.coroutines.resume
 
 @Singleton
 class WebViewForumPageSource @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val appPreferences: AppPreferences
 ) : ForumPageSource {
 
     override suspend fun fetchHtml(url: String): FetchResult = withContext(Dispatchers.Main) {
+        if (appPreferences.simulateChallenge.first()) {
+            return@withContext FetchResult.ChallengeRequired
+        }
+
         withTimeoutOrNull(WebViewConstants.FETCH_TIMEOUT_MS) {
             var result = executeFetch(url)
 

@@ -25,6 +25,7 @@ class AppPreferences @Inject constructor(
         private val TEST_MODE_INTERVAL_MINUTES = intPreferencesKey("test_mode_interval_minutes")
         private val TEST_MODE_LOG = stringPreferencesKey("test_mode_log")
         private val SYNC_LOG = stringPreferencesKey("sync_log")
+        private val SIMULATE_CHALLENGE = booleanPreferencesKey("simulate_challenge")
     }
 
     val consecutiveChallengeFailures: Flow<Int> = dataStore.data
@@ -99,6 +100,15 @@ class AppPreferences @Inject constructor(
             } else {
                 preferences[SYNC_LOG] = log
             }
+        }
+    }
+
+    val simulateChallenge: Flow<Boolean> = dataStore.data
+        .map { preferences -> preferences[SIMULATE_CHALLENGE] ?: false }
+
+    suspend fun setSimulateChallenge(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[SIMULATE_CHALLENGE] = enabled
         }
     }
 }

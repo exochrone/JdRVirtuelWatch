@@ -42,6 +42,7 @@ data class DebugUiState(
 
     // Background Task Debug
     val workInfoState: String? = null,
+    val workPeriodMinutes: Long? = null,
     val testModeEnabled: Boolean = false,
     val testModeIntervalMinutes: Int = 2,
     val testModeLog: List<TestModeEntry> = emptyList(),
@@ -49,7 +50,8 @@ data class DebugUiState(
 
     // Cloudflare Debug
     val consecutiveFailures: Int = 0,
-    val lastPromptAt: Long = 0L
+    val lastPromptAt: Long = 0L,
+    val simulateChallenge: Boolean = false
 )
 
 data class BrowserPackageUiModel(
@@ -114,6 +116,7 @@ sealed interface DebugEvent {
     data object ClearCookies : DebugEvent
     data object SimulateThreeFailures : DebugEvent
     data object ResetFailures : DebugEvent
+    data class ToggleSimulateChallenge(val enabled: Boolean) : DebugEvent
 }
 
 sealed interface DebugEffect {
