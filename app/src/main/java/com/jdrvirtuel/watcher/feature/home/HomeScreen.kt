@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -31,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,13 +43,18 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is HomeEffect.NavigateToDebug -> onNavigateToDebug()
                 is HomeEffect.NavigateToForum -> onNavigateToForum(effect.forumId)
-                is HomeEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is HomeEffect.ShowMessage -> {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(effect.message)
+                    }
+                }
             }
         }
     }

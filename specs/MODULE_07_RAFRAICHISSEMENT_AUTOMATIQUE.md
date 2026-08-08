@@ -24,9 +24,32 @@ Ce module ne fait pas : aucune notification n'est émise, c'est l'objet du modul
 ### Périodicité
 
 15 minutes est la valeur minimale acceptée par WorkManager pour une tâche périodique.
-Android n'en garantit pas la ponctualité : sous Doze, l'exécution peut être différée.
-C'est un comportement normal du système, à ne pas contourner par une alarme exacte ou
-un service en avant-plan.
+Toute valeur inférieure est silencieusement ramenée à 15 minutes. La périodicité de
+production n'est donc pas paramétrable, et un champ de réglage serait trompeur.
+
+Android n'en garantit pas non plus la ponctualité : sous Doze, l'exécution peut être
+différée de plusieurs dizaines de minutes. C'est un comportement normal du système, à
+ne pas contourner par une alarme exacte ou un service en avant-plan.
+
+Pour valider le module sans attendre des quarts d'heure, un mode test est prévu dans
+l'écran de debug. Il repose sur des tâches ponctuelles qui se replanifient, ce qui
+échappe à la limite des 15 minutes tout en s'exécutant réellement en arrière-plan.
+
+### Restrictions constructeur
+
+Sur de nombreux appareils, en particulier Samsung, une gestion d'énergie propriétaire
+peut empêcher WorkManager de s'exécuter lorsque l'application n'a pas été ouverte
+depuis un certain temps.
+
+Avant de conclure à un dysfonctionnement, vérifier sur l'appareil de test :
+
+- `Paramètres` > `Batterie` > `Limites d'utilisation en arrière-plan` : l'application
+  ne doit figurer ni dans les applications en veille, ni dans les applications en
+  veille profonde ;
+- informations de l'application > `Batterie` : régler sur « Sans restriction ».
+
+Ces réglages relèvent de l'utilisateur et ne peuvent pas être imposés par le code. Le
+module 10 en fait mention dans l'écran de réglages.
 
 ### Injection dans le Worker
 
@@ -62,7 +85,8 @@ tâche. Elle est obligatoire.
 | Classe | Package | Rôle |
 |---|---|---|
 | `SyncWorker` | `work` | Worker de synchronisation |
-| `SyncScheduler` | `work` | Programmation et déclenchement |
+| `SyncScheduler` | `work` | Programmation, déclenchement, mode test |
+| `TestModeLog` | `work` | Journal des exécutions du mode test |
 | `WorkModule` | `core.di` | Fourniture Hilt de `WorkManager` |
 
 ### SyncWorker
@@ -107,6 +131,11 @@ class SyncScheduler @Inject constructor(
   l'application.
 - `triggerImmediateSync` enregistre un `OneTimeWorkRequest` unique nommé
   `immediate_sync`, avec `ExistingWorkPolicy.KEEP`.
+- `startTestMode(intervalMinutes: Int)` active le mode test, enregistre l'intervalle
+  et planifie la première exécution de `test_sync`.
+- `stopTestMode()` désactive le mode test et annule la tâche `test_sync` en cours.
+- `scheduleNextTestRun()` est appelée par le Worker en fin d'exécution, et ne
+  replanifie que si le mode test est toujours actif.
 
 `schedulePeriodicSync` est appelée dans `JdrVirtuelWatcherApp.onCreate()`.
 
@@ -117,12 +146,38 @@ class SyncScheduler @Inject constructor(
 Une section « Tâche de fond » est ajoutée :
 
 - l'état de la tâche périodique, observé via
-  `workManager.getWorkInfosForUniqueWorkLiveData("periodic_sync")` converti en `Flow` :
+  `workManager.getWorkInfosForUniqueWorkFlow("periodic_sync")` :
   `ENQUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED` ;
 - la date de la dernière exécution, déduite des dates de synchronisation des forums ;
 - un bouton « Déclencher maintenant » qui appelle `triggerImmediateSync` ;
 - un bouton « Reprogrammer la tâche », qui annule puis reprogramme, utile en cas de
   doute.
+
+### Mode test accéléré
+
+Toujours dans la section « Tâche de fond », un second bloc permet de valider le
+fonctionnement en arrière-plan sans attendre 15 minutes :
+
+- un champ numérique « Intervalle de test », en minutes, valeur par défaut 2 ;
+- un bouton « Démarrer le mode test » et un bouton « Arrêter le mode test » ;
+- l'état courant du mode test, actif ou inactif, et l'intervalle retenu ;
+- un journal des exécutions, le plus récent en haut, chaque ligne portant l'heure au
+  format HH:mm:ss, l'issue de chaque forum et le nombre de nouveautés détectées.
+
+Le mode test repose sur un `OneTimeWorkRequest` nommé `test_sync`, planifié avec un
+`setInitialDelay` correspondant à l'intervalle choisi. À la fin de son exécution, le
+Worker se replanifie lui même tant que le mode test est actif. Cette mécanique échappe
+à la limite des 15 minutes des tâches périodiques tout en s'exécutant dans les mêmes
+conditions d'arrière-plan.
+
+L'état d'activation et l'intervalle sont stockés dans `AppPreferences`, sous les clés
+`test_mode_enabled` et `test_mode_interval_minutes`, afin de survivre à la fermeture
+de l'application. Le journal est écrit dans `AppPreferences` sous forme de liste
+sérialisée, faute de quoi il serait perdu à chaque exécution du Worker, celui-ci
+s'exécutant hors de toute activité.
+
+Le mode test est un outil de développement. Il est retiré au module 10, avec le reste
+de l'écran de debug placé derrière `BuildConfig.DEBUG`.
 
 ## Comportement
 
@@ -158,6 +213,9 @@ Aucune modification du schéma.
 | Échec réseau ponctuel | `Result.retry()` avec reprise exponentielle |
 | Challenge Cloudflare | `Result.success()`, l'incident est enregistré sur le forum |
 | Double programmation | `KEEP` empêche la duplication |
+| Mode test actif au redémarrage de l'application | Il reste actif, l'état est persistant |
+| Mode test et tâche périodique simultanés | Les deux tournent, le `Mutex` du module 04 les sérialise |
+| Économiseur d'énergie constructeur actif | La tâche peut ne jamais s'exécuter, voir la section dédiée |
 | Économiseur de batterie actif | L'exécution peut être suspendue, comportement système |
 
 ## Fichiers autorisés
@@ -168,6 +226,8 @@ app/build.gradle.kts                         ajout des dépendances uniquement
 app/src/main/AndroidManifest.xml             désactivation de l'initialiseur par défaut
 app/src/main/java/com/jdrvirtuel/watcher/work/SyncWorker.kt
 app/src/main/java/com/jdrvirtuel/watcher/work/SyncScheduler.kt
+app/src/main/java/com/jdrvirtuel/watcher/work/TestModeLog.kt
+app/src/main/java/com/jdrvirtuel/watcher/data/local/prefs/AppPreferences.kt  ajout des cles du mode test
 app/src/main/java/com/jdrvirtuel/watcher/core/di/WorkModule.kt
 app/src/main/java/com/jdrvirtuel/watcher/JdrVirtuelWatcherApp.kt
 app/src/main/java/com/jdrvirtuel/watcher/feature/debug/DebugScreen.kt
@@ -206,7 +266,18 @@ gradlew assembleDebug
 2. Vider les sujets, puis appuyer sur « Déclencher maintenant ».
    Résultat attendu : la tâche passe à `RUNNING` puis à `SUCCEEDED`, et les sujets des
    deux forums réapparaissent en base.
-3. Forcer l'exécution depuis un terminal, application fermée :
+3. Vérifier au préalable les réglages d'économie d'énergie décrits plus haut, sans
+   quoi les étapes suivantes échoueront pour une raison étrangère au code.
+4. Régler l'intervalle de test sur 2 minutes et appuyer sur « Démarrer le mode test ».
+   Fermer complètement l'application et poser le téléphone, écran éteint, pendant
+   10 minutes.
+   Résultat attendu : au retour dans l'écran de debug, le journal du mode test compte
+   environ cinq exécutions, avec leurs horodatages et leurs issues. C'est la preuve
+   que la synchronisation fonctionne application fermée.
+5. Appuyer sur « Arrêter le mode test ».
+   Résultat attendu : plus aucune ligne ne s'ajoute au journal.
+6. Optionnel, si `adb` est disponible : forcer l'exécution de la tâche périodique
+   depuis un terminal, application fermée :
    ```
    adb shell cmd jobscheduler run -f com.jdrvirtuel.watcher 0
    ```
@@ -214,16 +285,15 @@ gradlew assembleDebug
    ```
    adb shell dumpsys jobscheduler | findstr com.jdrvirtuel.watcher
    ```
-   Résultat attendu : au retour dans l'application, les dates de synchronisation des
-   deux forums ont été mises à jour.
-4. Activer le mode avion et déclencher la tâche.
+   Cette étape n'est pas indispensable, le mode test couvre déjà la vérification.
+7. Activer le mode avion et déclencher la tâche.
    Résultat attendu : la tâche reste en attente de la contrainte réseau, elle ne
    s'exécute pas.
-5. Désactiver le mode avion.
+8. Désactiver le mode avion.
    Résultat attendu : la tâche s'exécute d'elle même peu après.
-6. Redémarrer l'appareil, puis rouvrir l'application sans rien faire d'autre.
+9. Redémarrer l'appareil, puis rouvrir l'application sans rien faire d'autre.
    Résultat attendu : la tâche périodique est toujours à l'état `ENQUEUED`.
-7. Laisser l'application fermée une heure, puis la rouvrir.
+10. Laisser l'application fermée une heure, puis la rouvrir.
    Résultat attendu : les dates de dernière synchronisation montrent qu'au moins une
    exécution automatique a eu lieu entre temps. Un décalage par rapport aux 15 minutes
    théoriques est normal.

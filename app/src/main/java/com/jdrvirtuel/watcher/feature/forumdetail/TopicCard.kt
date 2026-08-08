@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.component.DimmedContent
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
+import com.jdrvirtuel.watcher.core.ui.theme.LocalCustomColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +40,7 @@ fun TopicCard(
     modifier: Modifier = Modifier
 ) {
     val isDimmed = topic.isFull || topic.isHidden
+    val unreadColor = LocalCustomColors.current.unreadContainer
 
     Card(
         onClick = { onTopicClick(topic) },
@@ -50,20 +52,50 @@ fun TopicCard(
                     .padding(Dimens.md)
                     .fillMaxWidth()
             ) {
+                Text(
+                    text = topic.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (topic.isRead) MaterialTheme.colorScheme.onSurface else unreadColor,
+                    fontWeight = if (!topic.isRead) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(Dimens.xs))
+
+                Text(
+                    text = stringResource(
+                        R.string.forum_detail_topic_meta,
+                        topic.createdAtLabel,
+                        topic.author
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                val repliesLabel = if (topic.replyCount == 0) {
+                    stringResource(R.string.forum_detail_no_replies)
+                } else {
+                    androidx.compose.ui.res.pluralStringResource(
+                        R.plurals.forum_detail_replies,
+                        topic.replyCount,
+                        if (topic.replyCount == 1) topic.lastPostAtLabel else topic.replyCount,
+                        if (topic.replyCount == 1) topic.lastPostAuthor else topic.lastPostAtLabel,
+                        topic.lastPostAuthor
+                    )
+                }
+
+                Text(
+                    text = repliesLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = topic.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = if (!topic.isRead) FontWeight.Bold else FontWeight.Normal,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
                     if (topic.isFull) {
                         AssistChip(
                             onClick = { },
@@ -73,39 +105,12 @@ fun TopicCard(
                                     style = MaterialTheme.typography.labelSmall
                                 )
                             },
-                            modifier = Modifier.padding(start = Dimens.sm),
                             enabled = false
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(Dimens.xs))
+                    Spacer(modifier = Modifier.weight(1f))
 
-                Text(
-                    text = stringResource(
-                        R.string.forum_detail_topic_meta,
-                        topic.author,
-                        topic.createdAtLabel
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Text(
-                    text = stringResource(
-                        R.string.forum_detail_topic_last_post,
-                        topic.replyCount,
-                        topic.lastPostAuthor,
-                        topic.lastPostAtLabel
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
                     IconButton(
                         onClick = { onToggleWatched(topic.id) },
                         enabled = !topic.isHidden

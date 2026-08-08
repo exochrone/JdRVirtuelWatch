@@ -70,16 +70,21 @@ fun ForumDetailScreen(
                     }
                 }
                 is ForumDetailEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                    scope.launch {
+                        snackbarHostState.showSnackbar(effect.message)
+                    }
                 }
                 is ForumDetailEffect.ShowUndoHide -> {
-                    val result = snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.forum_detail_topic_masked),
-                        actionLabel = context.getString(R.string.forum_detail_undo),
-                        duration = SnackbarDuration.Short
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        viewModel.onEvent(ForumDetailEvent.OnUndoHide(effect.topicId, effect.wasWatched))
+                    scope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        val result = snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.forum_detail_topic_masked),
+                            actionLabel = context.getString(R.string.forum_detail_undo),
+                            duration = SnackbarDuration.Short
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            viewModel.onEvent(ForumDetailEvent.OnUndoHide(effect.topicId, effect.wasWatched))
+                        }
                     }
                 }
                 ForumDetailEffect.NavigateBack -> {
@@ -162,15 +167,24 @@ fun ForumDetailScreen(
                     CircularProgressIndicator()
                 }
             } else if (uiState.errorMessage != null && uiState.topics.isEmpty()) {
-                Box(
+                LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentPadding = PaddingValues(Dimens.md),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = uiState.errorMessage!!,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(Dimens.md)
-                    )
+                    item {
+                        Box(
+                            modifier = Modifier.fillParentMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = uiState.errorMessage!!,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.padding(Dimens.md)
+                            )
+                        }
+                    }
                 }
             } else {
                 LazyColumn(

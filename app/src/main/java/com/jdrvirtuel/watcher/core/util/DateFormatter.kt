@@ -9,6 +9,21 @@ import java.util.Locale
 
 object DateFormatter {
     private val absoluteFormatter = DateTimeFormatter.ofPattern("'le' d MMMM 'à' HH:mm", Locale.FRENCH)
+    private val absoluteWithYearFormatter = DateTimeFormatter.ofPattern("'le' d MMMM yyyy 'à' HH:mm", Locale.FRENCH)
+
+    fun formatTopicDate(timestamp: Long): String {
+        val instant = Instant.ofEpochMilli(timestamp)
+        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+        val now = LocalDateTime.now(ZoneId.systemDefault())
+        
+        val formatter = if (dateTime.year == now.year) {
+            absoluteFormatter
+        } else {
+            absoluteWithYearFormatter
+        }
+        
+        return formatter.format(dateTime).lowercase(Locale.FRENCH)
+    }
 
     fun formatRelative(timestamp: Long?): String {
         if (timestamp == null) return "Jamais synchronisé"
