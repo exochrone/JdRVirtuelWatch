@@ -46,6 +46,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jdrvirtuel.watcher.R
+import com.jdrvirtuel.watcher.core.ui.component.ChallengeBanner
 import com.jdrvirtuel.watcher.core.ui.component.PermissionBanner
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import kotlinx.coroutines.launch
@@ -55,6 +56,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onNavigateToForum: (Int) -> Unit,
     onNavigateToDebug: () -> Unit,
+    onNavigateToVerification: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -102,6 +104,7 @@ fun HomeScreen(
             when (effect) {
                 is HomeEffect.NavigateToDebug -> onNavigateToDebug()
                 is HomeEffect.NavigateToForum -> onNavigateToForum(effect.forumId)
+                is HomeEffect.NavigateToVerification -> onNavigateToVerification()
                 is HomeEffect.ShowMessage -> {
                     scope.launch {
                         snackbarHostState.showSnackbar(effect.message)
@@ -148,6 +151,10 @@ fun HomeScreen(
                     }
                     context.startActivity(intent)
                 })
+            }
+
+            if (uiState.consecutiveFailures >= 1) {
+                ChallengeBanner(onVerifyClick = { viewModel.onEvent(HomeEvent.OnVerificationClick) })
             }
             
             Box(modifier = Modifier.weight(1f)) {

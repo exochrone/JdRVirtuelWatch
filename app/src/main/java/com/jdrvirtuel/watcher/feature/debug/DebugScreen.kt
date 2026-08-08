@@ -137,7 +137,7 @@ fun DebugScreen(
             }
             item {
                 DebugCollapsibleSection(title = stringResource(R.string.debug_cloudflare_section)) {
-                    CloudflareSection()
+                    CloudflareSection(uiState, viewModel::onEvent)
                 }
             }
             item {
@@ -338,9 +338,24 @@ fun ParserSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
 }
 
 @Composable
-fun CloudflareSection() {
+fun CloudflareSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
     var showWebView by remember { mutableStateOf(false) }
+    val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm:ss", Locale.getDefault()) }
+
     Column {
+        Text("Échecs consécutifs : ${uiState.consecutiveFailures}", style = MaterialTheme.typography.bodyMedium)
+        val lastPrompt = if (uiState.lastPromptAt > 0) dateFormat.format(Date(uiState.lastPromptAt)) else "Jamais"
+        Text("Dernière notification : $lastPrompt", style = MaterialTheme.typography.bodySmall)
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.sm),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.xs)
+        ) {
+            Button(onClick = { onEvent(DebugEvent.ClearCookies) }, modifier = Modifier.weight(1f)) { Text("Effacer Cookies") }
+            Button(onClick = { onEvent(DebugEvent.SimulateThreeFailures) }, modifier = Modifier.weight(1f)) { Text("Simuler 3 échecs") }
+            Button(onClick = { onEvent(DebugEvent.ResetFailures) }, modifier = Modifier.weight(1f)) { Text("Reset Compteur") }
+        }
+
         Button(onClick = { showWebView = !showWebView }, modifier = Modifier.fillMaxWidth()) { Text(if (showWebView) "Masquer WebView" else "Valider Challenge Cloudflare") }
         if (showWebView) {
             Card(modifier = Modifier.fillMaxWidth().height(600.dp).padding(vertical = Dimens.sm)) {
@@ -352,6 +367,7 @@ fun CloudflareSection() {
                             settings.useWideViewPort = true
                             settings.loadWithOverviewMode = true
                             CookieManager.getInstance().setAcceptCookie(true)
+                            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     view?.evaluateJavascript("(function(){return document.documentElement.outerHTML;})();") { valStr ->
@@ -362,7 +378,11 @@ fun CloudflareSection() {
                             loadUrl("https://www.jdrvirtuel.com/viewforum.php?f=15")
                         }
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    onRelease = { webView ->
+                        webView.stopLoading()
+                        webView.destroy()
+                    }
                 )
             }
         }

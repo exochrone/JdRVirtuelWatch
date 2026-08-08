@@ -27,7 +27,7 @@ class SyncScheduler @Inject constructor(
         private const val TEST_SYNC_NAME = "test_sync"
     }
 
-    fun schedulePeriodicSync() {
+    fun schedulePeriodicSync(policy: ExistingPeriodicWorkPolicy = ExistingPeriodicWorkPolicy.KEEP, isLongPeriod: Boolean = false) {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -36,7 +36,10 @@ class SyncScheduler @Inject constructor(
             .putString("sync_source", SyncSource.PERIODIC.name)
             .build()
 
-        val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+        val interval = if (isLongPeriod) 1L else 15L
+        val unit = if (isLongPeriod) TimeUnit.HOURS else TimeUnit.MINUTES
+
+        val request = PeriodicWorkRequestBuilder<SyncWorker>(interval, unit)
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .setInputData(inputData)
@@ -44,7 +47,7 @@ class SyncScheduler @Inject constructor(
 
         workManager.enqueueUniquePeriodicWork(
             PERIODIC_SYNC_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            policy,
             request
         )
     }
@@ -74,9 +77,8 @@ class SyncScheduler @Inject constructor(
         workManager.cancelUniqueWork(PERIODIC_SYNC_NAME)
     }
 
-    fun reschedulePeriodicSync() {
-        workManager.cancelUniqueWork(PERIODIC_SYNC_NAME)
-        schedulePeriodicSync()
+    fun reschedulePeriodicSync(isLongPeriod: Boolean = false) {
+        schedulePeriodicSync(ExistingPeriodicWorkPolicy.UPDATE, isLongPeriod)
     }
 
     suspend fun startTestMode(intervalMinutes: Int) {

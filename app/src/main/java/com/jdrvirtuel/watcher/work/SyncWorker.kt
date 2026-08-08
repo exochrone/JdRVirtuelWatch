@@ -8,7 +8,10 @@ import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.SyncSource
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
+import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
+import com.jdrvirtuel.watcher.domain.repository.ChallengeStateRepository
+import com.jdrvirtuel.watcher.notification.AppNotifier
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -19,7 +22,10 @@ class SyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val syncAllForums: SyncAllForumsUseCase,
+    private val forumRepository: ForumRepository,
     private val appPreferences: AppPreferences,
+    private val challengeRepository: ChallengeStateRepository,
+    private val appNotifier: AppNotifier,
     private val testModeLog: TestModeLog,
     private val syncLog: SyncLog,
     private val syncSchedulerProvider: Provider<SyncScheduler>
@@ -49,23 +55,43 @@ class SyncWorker @AssistedInject constructor(
             val anyChallenge = outcomes.any { it.status == SyncStatus.CHALLENGE_REQUIRED }
             val anySuccess = outcomes.any { it.status == SyncStatus.SUCCESS }
 
+            if (anyChallenge) {
+                handleChallenge()
+            } else if (anySuccess) {
+                syncSchedulerProvider.get().reschedulePeriodicSync(isLongPeriod = false)
+            }
+
             when {
                 anySuccess -> Result.success()
-                anyChallenge -> Result.success() // Challenge will be handled by UI/Module 09
+                anyChallenge -> Result.success()
                 allFailedNet -> Result.retry()
                 else -> Result.success()
             }
         } catch (e: Exception) {
-            val errorOutcomes = listOf(
-                SyncOutcome(forumId = 15, status = SyncStatus.ERROR, errorMessage = e.message),
-                SyncOutcome(forumId = 16, status = SyncStatus.ERROR, errorMessage = e.message)
-            )
+            val forums = forumRepository.observeForums().first()
+            val errorOutcomes = forums.map { forum ->
+                SyncOutcome(forumId = forum.id, status = SyncStatus.ERROR, errorMessage = e.message)
+            }
             syncLog.addEntry(source, errorOutcomes)
             
             if (source == SyncSource.TEST && appPreferences.isTestModeEnabled.first()) {
                 syncSchedulerProvider.get().scheduleNextTestRun()
             }
             Result.retry()
+        }
+    }
+
+    private suspend fun handleChallenge() {
+        val failures = challengeRepository.consecutiveFailures.first()
+        if (failures >= 3) {
+            syncSchedulerProvider.get().reschedulePeriodicSync(isLongPeriod = true)
+        }
+
+        val lastPrompt = challengeRepository.lastPromptAt.first()
+        val now = System.currentTimeMillis()
+        if (now - lastPrompt > 60 * 60 * 1000) {
+            appNotifier.notifyVerificationRequired()
+            challengeRepository.updateLastPromptAt(now)
         }
     }
 }

@@ -11,10 +11,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import androidx.navigation.navDeepLink
 import com.jdrvirtuel.watcher.feature.debug.DebugScreen
 import com.jdrvirtuel.watcher.feature.forumdetail.ForumDetailScreen
 import com.jdrvirtuel.watcher.feature.forumdetail.ForumDetailViewModel
 import com.jdrvirtuel.watcher.feature.home.HomeScreen
+import com.jdrvirtuel.watcher.feature.verification.VerificationScreen
 
 @Composable
 fun AppNavHost(
@@ -29,7 +31,8 @@ fun AppNavHost(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToForum = { forumId -> navController.navigate(ForumDetailRoute(forumId)) },
-                onNavigateToDebug = { navController.navigate(DebugRoute) }
+                onNavigateToDebug = { navController.navigate(DebugRoute) },
+                onNavigateToVerification = { navController.navigate(VerificationRoute) }
             )
         }
         composable<DebugRoute> {
@@ -42,6 +45,15 @@ fun AppNavHost(
             ForumDetailScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
+            )
+        }
+        composable<VerificationRoute>(
+            deepLinks = listOf(
+                navDeepLink { uriPattern = "jdrvirtuel://verification" }
+            )
+        ) {
+            VerificationScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

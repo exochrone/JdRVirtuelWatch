@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
+import com.jdrvirtuel.watcher.domain.repository.ChallengeStateRepository
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
@@ -29,6 +30,7 @@ class HomeViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val syncAllForumsUseCase: SyncAllForumsUseCase,
+    private val challengeRepository: ChallengeStateRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -60,12 +62,14 @@ class HomeViewModel @Inject constructor(
                 combine(forumUiModelsFlows) { it.toList() }
             }
         },
-        isSyncing
-    ) { forums, syncing ->
+        isSyncing,
+        challengeRepository.consecutiveFailures
+    ) { forums, syncing, failures ->
         HomeUiState(
             forums = forums,
             isSyncing = syncing,
-            isLoading = false
+            isLoading = false,
+            consecutiveFailures = failures
         )
     }.stateIn(
         scope = viewModelScope,
@@ -84,6 +88,11 @@ class HomeViewModel @Inject constructor(
             HomeEvent.OnDebugClick -> {
                 viewModelScope.launch {
                     _effects.send(HomeEffect.NavigateToDebug)
+                }
+            }
+            HomeEvent.OnVerificationClick -> {
+                viewModelScope.launch {
+                    _effects.send(HomeEffect.NavigateToVerification)
                 }
             }
         }

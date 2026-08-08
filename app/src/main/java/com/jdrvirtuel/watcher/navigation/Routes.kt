@@ -10,3 +10,6 @@ data object DebugRoute
 
 @Serializable
 data class ForumDetailRoute(val forumId: Int)
+
+@Serializable
+data object VerificationRoute

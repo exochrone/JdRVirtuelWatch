@@ -19,6 +19,7 @@ import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.ParseResult
 import com.jdrvirtuel.watcher.domain.model.SyncOutcome
 import com.jdrvirtuel.watcher.domain.model.Topic
+import com.jdrvirtuel.watcher.domain.repository.ChallengeStateRepository
 import com.jdrvirtuel.watcher.domain.repository.ForumPageSource
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
@@ -26,6 +27,7 @@ import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
 import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
 import com.jdrvirtuel.watcher.work.SyncScheduler
 import com.jdrvirtuel.watcher.work.TestModeLog
+import android.webkit.CookieManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -55,6 +57,7 @@ class DebugViewModel @Inject constructor(
     private val parser: TopicListParser,
     private val syncForumUseCase: SyncForumUseCase,
     private val syncAllForumsUseCase: SyncAllForumsUseCase,
+    private val challengeRepository: ChallengeStateRepository,
     val appPreferences: AppPreferences,
     private val workManager: WorkManager,
     private val syncScheduler: SyncScheduler,
@@ -92,7 +95,9 @@ class DebugViewModel @Inject constructor(
         appPreferences.isTestModeEnabled,
         appPreferences.testModeIntervalMinutes,
         appPreferences.testModeLog,
-        appPreferences.syncLog
+        appPreferences.syncLog,
+        challengeRepository.consecutiveFailures,
+        challengeRepository.lastPromptAt
     ) { array ->
         val forums = array[0] as List<Forum>
         val topics15 = array[1] as List<Topic>
@@ -109,6 +114,8 @@ class DebugViewModel @Inject constructor(
         val testInterval = array[12] as Int
         val testLogRaw = array[13] as String?
         val syncLogRaw = array[14] as String?
+        val failures = array[15] as Int
+        val lastPrompt = array[16] as Long
 
         val testLog = if (testLogRaw != null) {
             try {
@@ -154,7 +161,9 @@ class DebugViewModel @Inject constructor(
             testModeEnabled = testEnabled,
             testModeIntervalMinutes = testInterval,
             testModeLog = testLog,
-            syncLog = syncLog
+            syncLog = syncLog,
+            consecutiveFailures = failures,
+            lastPromptAt = lastPrompt
         )
     }.stateIn(
         scope = viewModelScope,
@@ -226,6 +235,22 @@ class DebugViewModel @Inject constructor(
             DebugEvent.ClearTestModeLog -> {
                 viewModelScope.launch {
                     testModeLog.clear()
+                }
+            }
+            DebugEvent.ClearCookies -> {
+                CookieManager.getInstance().removeAllCookies(null)
+                CookieManager.getInstance().flush()
+            }
+            DebugEvent.SimulateThreeFailures -> {
+                viewModelScope.launch {
+                    challengeRepository.incrementFailures()
+                    challengeRepository.incrementFailures()
+                    challengeRepository.incrementFailures()
+                }
+            }
+            DebugEvent.ResetFailures -> {
+                viewModelScope.launch {
+                    challengeRepository.resetFailures()
                 }
             }
         }

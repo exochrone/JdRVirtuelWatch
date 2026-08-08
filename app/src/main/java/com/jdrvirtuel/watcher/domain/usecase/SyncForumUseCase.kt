@@ -15,7 +15,8 @@ class SyncForumUseCase @Inject constructor(
     private val topicRepository: TopicRepository,
     private val forumPageSource: ForumPageSource,
     private val parser: TopicParser,
-    private val notifier: NewContentNotifier
+    private val notifier: NewContentNotifier,
+    private val challengeRepository: ChallengeStateRepository
 ) {
     private val mutexes = mutableMapOf<Int, Mutex>()
 
@@ -37,6 +38,7 @@ class SyncForumUseCase @Inject constructor(
             val fetchResult = forumPageSource.fetchHtml(forum.url)
             when (fetchResult) {
                 is FetchResult.ChallengeRequired -> {
+                    challengeRepository.incrementFailures()
                     forumRepository.updateSyncState(forumId, false, null, "Vérification Cloudflare requise")
                     SyncOutcome(forumId, SyncStatus.CHALLENGE_REQUIRED)
                 }
@@ -113,6 +115,7 @@ class SyncForumUseCase @Inject constructor(
                     val purgedCount = topicRepository.deleteStale(forumId, thirtyDaysAgo)
 
                     forumRepository.updateSyncState(forumId, true, now, null)
+                    challengeRepository.resetFailures()
 
                     if (newTopics.isNotEmpty()) {
                         notifier.notifyNewTopics(forum, newTopics)

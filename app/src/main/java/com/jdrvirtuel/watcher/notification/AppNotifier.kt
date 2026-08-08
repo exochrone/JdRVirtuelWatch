@@ -56,19 +56,20 @@ class AppNotifier @Inject constructor(
 
     fun notifyVerificationRequired() {
         val intent = Intent(context, MainActivity::class.java).apply {
+            data = Uri.parse("jdrvirtuel://verification")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            42,
             intent,
             PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, NotificationChannels.VERIFICATION)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(context.getString(R.string.notification_channel_verification))
-            .setContentText(context.getString(R.string.home_sync_challenge))
+            .setContentTitle(context.getString(R.string.verification_title))
+            .setContentText(context.getString(R.string.verification_notification_text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

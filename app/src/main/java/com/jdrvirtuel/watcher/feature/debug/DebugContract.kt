@@ -45,7 +45,11 @@ data class DebugUiState(
     val testModeEnabled: Boolean = false,
     val testModeIntervalMinutes: Int = 2,
     val testModeLog: List<TestModeEntry> = emptyList(),
-    val syncLog: List<SyncLogEntry> = emptyList()
+    val syncLog: List<SyncLogEntry> = emptyList(),
+
+    // Cloudflare Debug
+    val consecutiveFailures: Int = 0,
+    val lastPromptAt: Long = 0L
 )
 
 data class BrowserPackageUiModel(
@@ -105,6 +109,11 @@ sealed interface DebugEvent {
     data object StartTestMode : DebugEvent
     data object StopTestMode : DebugEvent
     data object ClearTestModeLog : DebugEvent
+
+    // Cloudflare Debug
+    data object ClearCookies : DebugEvent
+    data object SimulateThreeFailures : DebugEvent
+    data object ResetFailures : DebugEvent
 }
 
 sealed interface DebugEffect {

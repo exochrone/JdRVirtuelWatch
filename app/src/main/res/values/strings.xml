@@ -111,6 +111,17 @@
     <string name="home_sync_challenge">Vérification requise pour accéder au forum</string>
     <string name="home_sync_unexpected_error">Erreur inattendue lors de la synchronisation</string>
 
+    <!-- Verification -->
+    <string name="verification_title">Vérification</string>
+    <string name="verification_explanation">Le forum demande une vérification anti-robot. Validez la case ci-dessous, la page se fermera automatiquement.</string>
+    <string name="verification_success">Vérification réussie</string>
+    <string name="verification_required">Vérification requise</string>
+    <string name="verification_notification_text">Le forum demande une vérification. Appuyez pour la faire.</string>
+
+    <!-- Home Banner -->
+    <string name="home_banner_blocked">Accès au forum bloqué, vérification requise</string>
+    <string name="home_banner_verify">Vérifier</string>
+
     <!-- Forum Detail -->
     <string name="forum_detail_show_hidden">Afficher les sujets masqués</string>
     <string name="forum_detail_hide_hidden">Cacher les sujets masqués</string>
