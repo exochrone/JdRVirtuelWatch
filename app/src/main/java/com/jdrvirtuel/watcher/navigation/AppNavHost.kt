@@ -16,6 +16,7 @@ import com.jdrvirtuel.watcher.feature.debug.DebugScreen
 import com.jdrvirtuel.watcher.feature.forumdetail.ForumDetailScreen
 import com.jdrvirtuel.watcher.feature.forumdetail.ForumDetailViewModel
 import com.jdrvirtuel.watcher.feature.home.HomeScreen
+import com.jdrvirtuel.watcher.feature.settings.SettingsScreen
 import com.jdrvirtuel.watcher.feature.verification.VerificationScreen
 
 @Composable
@@ -31,8 +32,14 @@ fun AppNavHost(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToForum = { forumId -> navController.navigate(ForumDetailRoute(forumId)) },
-                onNavigateToDebug = { navController.navigate(DebugRoute) },
+                onNavigateToSettings = { navController.navigate(SettingsRoute) },
                 onNavigateToVerification = { navController.navigate(VerificationRoute) }
+            )
+        }
+        composable<SettingsRoute> {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDebug = { navController.navigate(DebugRoute) }
             )
         }
         composable<DebugRoute> {

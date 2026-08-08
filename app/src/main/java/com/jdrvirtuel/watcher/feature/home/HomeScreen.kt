@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.component.ChallengeBanner
+import com.jdrvirtuel.watcher.core.ui.component.LoadingState
 import com.jdrvirtuel.watcher.core.ui.component.PermissionBanner
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import kotlinx.coroutines.launch
@@ -55,7 +56,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     onNavigateToForum: (Int) -> Unit,
-    onNavigateToDebug: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToVerification: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -102,7 +103,7 @@ fun HomeScreen(
         
         viewModel.effects.collect { effect ->
             when (effect) {
-                is HomeEffect.NavigateToDebug -> onNavigateToDebug()
+                is HomeEffect.NavigateToDebug -> { /* Removed from here */ }
                 is HomeEffect.NavigateToForum -> onNavigateToForum(effect.forumId)
                 is HomeEffect.NavigateToVerification -> onNavigateToVerification()
                 is HomeEffect.ShowMessage -> {
@@ -128,10 +129,10 @@ fun HomeScreen(
                             contentDescription = stringResource(R.string.home_refresh)
                         )
                     }
-                    IconButton(onClick = { viewModel.onEvent(HomeEvent.OnDebugClick) }) {
+                    IconButton(onClick = onNavigateToSettings) {
                         Icon(
-                            imageVector = Icons.Outlined.BugReport,
-                            contentDescription = stringResource(R.string.home_debug)
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = stringResource(R.string.home_settings)
                         )
                     }
                 }
@@ -159,7 +160,7 @@ fun HomeScreen(
             
             Box(modifier = Modifier.weight(1f)) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    LoadingState()
                 } else {
                     PullToRefreshBox(
                         isRefreshing = uiState.isSyncing,

@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -38,6 +39,9 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jdrvirtuel.watcher.R
+import com.jdrvirtuel.watcher.core.ui.component.EmptyState
+import com.jdrvirtuel.watcher.core.ui.component.ErrorState
+import com.jdrvirtuel.watcher.core.ui.component.LoadingState
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
 import com.jdrvirtuel.watcher.core.util.BrowserLauncher
 import kotlinx.coroutines.launch
@@ -162,43 +166,49 @@ fun ForumDetailScreen(
             onRefresh = { viewModel.onEvent(ForumDetailEvent.OnRefresh) },
             modifier = Modifier.padding(padding)
         ) {
-            if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            when {
+                uiState.isLoading -> {
+                    LoadingState()
                 }
-            } else if (uiState.errorMessage != null && uiState.topics.isEmpty()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(Dimens.md),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillParentMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = uiState.errorMessage!!,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(Dimens.md)
-                            )
-                        }
+                uiState.errorMessage != null && uiState.topics.isEmpty() -> {
+                    ErrorState(
+                        message = uiState.errorMessage!!,
+                        onRetry = { viewModel.onEvent(ForumDetailEvent.OnRefresh) }
+                    )
+                }
+                uiState.topics.isEmpty() -> {
+                    if (uiState.totalTopicCount > 0 && !uiState.showHidden) {
+                        EmptyState(
+                            icon = Icons.Outlined.VisibilityOff,
+                            title = stringResource(R.string.forum_detail_all_hidden),
+                            message = "",
+                            actionLabel = stringResource(R.string.forum_detail_show_hidden),
+                            onAction = { viewModel.onEvent(ForumDetailEvent.OnToggleShowHidden) }
+                        )
+                    } else {
+                        EmptyState(
+                            icon = Icons.Outlined.Forum,
+                            title = stringResource(R.string.forum_detail_empty),
+                            message = "",
+                            actionLabel = stringResource(R.string.home_refresh),
+                            onAction = { viewModel.onEvent(ForumDetailEvent.OnRefresh) }
+                        )
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(Dimens.md),
-                    verticalArrangement = Arrangement.spacedBy(Dimens.sm)
-                ) {
-                    items(uiState.topics, key = { it.id }) { topic ->
-                        TopicCard(
-                            topic = topic,
-                            onTopicClick = { viewModel.onEvent(ForumDetailEvent.OnTopicClick(it)) },
-                            onToggleHidden = { viewModel.onEvent(ForumDetailEvent.OnToggleHidden(it)) },
-                            onToggleWatched = { viewModel.onEvent(ForumDetailEvent.OnToggleWatched(it)) }
-                        )
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(Dimens.md),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.sm)
+                    ) {
+                        items(uiState.topics, key = { it.id }) { topic ->
+                            TopicCard(
+                                topic = topic,
+                                onTopicClick = { viewModel.onEvent(ForumDetailEvent.OnTopicClick(it)) },
+                                onToggleHidden = { viewModel.onEvent(ForumDetailEvent.OnToggleHidden(it)) },
+                                onToggleWatched = { viewModel.onEvent(ForumDetailEvent.OnToggleWatched(it)) }
+                            )
+                        }
                     }
                 }
             }

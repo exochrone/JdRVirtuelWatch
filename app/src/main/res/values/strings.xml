@@ -93,9 +93,11 @@
     <string name="debug_work_section">Tâche de fond</string>
     <string name="debug_work_period">Période actuelle : %1$d minutes</string>
     <string name="back">Retour</string>
+    <string name="retry">Réessayer</string>
 
     <!-- Home -->
     <string name="home_refresh">Rafraîchir</string>
+    <string name="home_settings">Réglages</string>
     <string name="home_debug">Écran de debug</string>
     <string name="home_never_synced">Jamais synchronisé</string>
     <string name="home_last_sync">Mis à jour %1$s</string>
@@ -157,4 +159,39 @@
     </plurals>
     <string name="notification_permission_title">Notifications désactivées</string>
     <string name="notification_permission_enable">Activer</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Réglages</string>
+    <string name="settings_section_watch">Surveillance</string>
+    <string name="settings_section_notifications">Notifications</string>
+    <string name="settings_manage_notifications">Gérer les notifications</string>
+    <string name="settings_section_navigation">Navigation</string>
+    <string name="settings_browser_selector_label">Navigateur pour les sujets</string>
+    <string name="settings_browser_system_default">Choix du système</string>
+    <string name="settings_section_data">Données</string>
+    <string name="settings_stored_topics_count">Sujets stockés : %1$d</string>
+    <string name="settings_clear_data">Effacer les données locales</string>
+    <string name="settings_clear_data_confirm_title">Effacer les données ?</string>
+    <string name="settings_clear_data_confirm_message">Tous les sujets seront supprimés et les forums devront être resynchronisés. Les réglages et le journal sont conservés.</string>
+    <string name="settings_section_sync_log">Journal des synchronisations</string>
+    <string name="settings_sync_log_empty">Journal vide</string>
+    <string name="settings_clear_sync_log">Effacer le journal</string>
+    <string name="settings_clear_sync_log_confirm_title">Effacer le journal ?</string>
+    <string name="settings_clear_sync_log_confirm_message">L\'historique des synchronisations sera définitivement supprimé.</string>
+    <string name="settings_section_about">À propos</string>
+    <string name="settings_about_app_name">JdRVirtuelWatcher %1$s</string>
+    <string name="settings_about_description">Cette application consulte les pages publiques du forum jdrvirtuel.com pour vous alerter des nouveautés.</string>
+    <string name="settings_section_dev">Développement</string>
+    <string name="settings_dev_debug_screen">Écran de debug</string>
+    <string name="settings_sync_interval_15">Toutes les 15 minutes</string>
+    <string name="settings_sync_interval_60">Toutes les 60 minutes (blocage)</string>
+    <string name="settings_data_cleared">Données effacées</string>
+    <string name="settings_sync_log_cleared">Journal effacé</string>
+    <string name="settings_browser_not_found">Navigateur non trouvé</string>
+    <string name="sync_source_manual">Manuel</string>
+    <string name="sync_source_auto">Auto</string>
+    <string name="sync_source_test">Test</string>
+    <string name="sync_status_ok">Ok</string>
+    <string name="sync_status_blocked">Bloqué</string>
+    <string name="sync_status_error">Erreur</string>
 </resources>

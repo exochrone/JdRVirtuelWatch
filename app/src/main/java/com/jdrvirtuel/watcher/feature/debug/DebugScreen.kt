@@ -131,11 +131,6 @@ fun DebugScreen(
                 }
             }
             item {
-                DebugCollapsibleSection(title = stringResource(R.string.debug_browser_section)) {
-                    BrowserSection(uiState, viewModel::onEvent, browserLauncher)
-                }
-            }
-            item {
                 DebugCollapsibleSection(title = stringResource(R.string.debug_cloudflare_section)) {
                     CloudflareSection(uiState, viewModel::onEvent)
                 }
@@ -434,104 +429,6 @@ fun BenchSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun BrowserSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit, browserLauncher: BrowserLauncher) {
-    LaunchedEffect(Unit) {
-        onEvent(DebugEvent.RefreshBrowserInfo)
-    }
-
-    Column {
-        Text("Configuration du navigateur :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-        
-        var expanded by remember { mutableStateOf(false) }
-        val options = listOf(null) + uiState.ctCompatiblePackages.map { it.packageName }
-        val currentLabel = if (uiState.preferredBrowserPackage == null) {
-            "Choix du système"
-        } else {
-            uiState.ctCompatiblePackages.find { it.packageName == uiState.preferredBrowserPackage }?.label ?: uiState.preferredBrowserPackage
-        }
-
-        Box(modifier = Modifier.padding(vertical = Dimens.sm)) {
-            OutlinedButton(
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(currentLabel)
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(Icons.Default.ArrowDropDown, null)
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                options.forEach { pkg ->
-                    val label = if (pkg == null) "Choix du système" else uiState.ctCompatiblePackages.find { it.packageName == pkg }?.label ?: pkg
-                    DropdownMenuItem(
-                        text = { Text(label) },
-                        onClick = {
-                            onEvent(DebugEvent.SetPreferredBrowser(pkg))
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
-        
-        Text(
-            text = "Actuellement retenu : $currentLabel",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(Dimens.md))
-
-        Text(stringResource(R.string.debug_browser_ct_compatible), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-        if (uiState.ctCompatiblePackages.isEmpty()) {
-            Text(stringResource(R.string.debug_browser_none), style = MaterialTheme.typography.bodySmall)
-        } else {
-            uiState.ctCompatiblePackages.forEach {
-                Text("• ${it.label} (${it.packageName})", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.sm))
-
-        Text(stringResource(R.string.debug_browser_installed), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-        if (uiState.installedBrowserPackages.isEmpty()) {
-            Text(stringResource(R.string.debug_browser_none), style = MaterialTheme.typography.bodySmall)
-        } else {
-            uiState.installedBrowserPackages.forEach {
-                Text("• $it", style = MaterialTheme.typography.bodySmall)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.md))
-
-        Button(
-            onClick = { browserLauncher.openUrl("https://www.jdrvirtuel.com/viewtopic.php?f=15&t=41234") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(stringResource(R.string.debug_browser_test_launcher))
-        }
-        Button(onClick = { onEvent(DebugEvent.TestBraveCustomTabs) }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.debug_browser_test_brave))
-        }
-        Button(onClick = { onEvent(DebugEvent.TestActionViewSimple) }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.debug_browser_test_action_view))
-        }
-
-        uiState.lastBrowserTestResult?.let {
-            Text(
-                text = stringResource(R.string.debug_browser_result, it),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (it.contains("Exception") || it.contains("Échec")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = Dimens.sm)
-            )
-        }
-        
-        Button(onClick = { onEvent(DebugEvent.RefreshBrowserInfo) }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.filledTonalButtonColors()) {
-            Text("Rafraîchir les listes")
         }
     }
 }
