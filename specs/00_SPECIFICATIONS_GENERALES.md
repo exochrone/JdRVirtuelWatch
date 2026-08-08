@@ -370,13 +370,20 @@ Bibliothèque `androidx.compose.material.icons`, jeu `Outlined` et `Filled`.
 
 | Usage | Icône |
 |---|---|
-| Masquer | `Icons.Outlined.VisibilityOff` |
-| Afficher | `Icons.Outlined.Visibility` |
-| Surveiller, inactif | `Icons.Outlined.NotificationsOff` |
-| Surveiller, actif | `Icons.Filled.Notifications` |
+| Sujet visible | `Icons.Outlined.Visibility` |
+| Sujet masqué | `Icons.Outlined.VisibilityOff` |
+| Sujet non surveillé | `Icons.Outlined.NotificationsOff` |
+| Sujet surveillé | `Icons.Filled.Notifications` |
+| Masquer les sujets complets | `Icons.Outlined.PlaylistRemove` |
+| Menu de débordement | `Icons.Outlined.MoreVert` |
 | Rafraîchir | `Icons.Outlined.Refresh` |
 | Réglages | `Icons.Outlined.Settings` |
 | Alerte | `Icons.Outlined.Warning` |
+
+Sur une carte de sujet, les icônes décrivent l'**état** et jamais l'action. Deux
+icônes barrées côte à côte ne doivent pas signifier des choses opposées. Seul le
+bouton de bascule « Afficher les sujets masqués » de la barre supérieure fait
+exception et suit une logique d'action.
 
 ### 5.7 Animations
 

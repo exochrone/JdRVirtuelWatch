@@ -10,6 +10,7 @@ import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
+import com.jdrvirtuel.watcher.notification.NotificationLog
 import com.jdrvirtuel.watcher.work.SyncLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,30 +31,42 @@ class SettingsViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val appPreferences: AppPreferences,
-    private val syncLog: SyncLog
+    private val syncLog: SyncLog,
+    private val notificationLog: NotificationLog
 ) : ViewModel() {
 
     private val browserLauncher = BrowserLauncher(context, appPreferences, viewModelScope)
     private val _refreshTrigger = MutableStateFlow(0)
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    private val commonInfoFlow = combine(
         forumRepository.observeForums(),
         appPreferences.consecutiveChallengeFailures,
-        appPreferences.preferredBrowserPackage,
+        appPreferences.preferredBrowserPackage
+    ) { forums, failures, preferredBrowser ->
+        Triple(forums, failures, preferredBrowser)
+    }
+
+    private val dataInfoFlow = combine(
         topicRepository.observeTotalCount(),
         appPreferences.syncLog,
+        appPreferences.notificationLog,
         _refreshTrigger
-    ) { args ->
-        val forums = args[0] as List<Forum>
-        val failures = args[1] as Int
-        val preferredBrowser = args[2] as String?
-        val totalTopics = args[3] as Int
+    ) { totalTopics, _, _, _ ->
+        totalTopics
+    }
+
+    val uiState: StateFlow<SettingsUiState> = combine(
+        commonInfoFlow,
+        dataInfoFlow
+    ) { common, totalTopics ->
+        val (forums, failures, preferredBrowser) = common
         
         val browsers = browserLauncher.listCustomTabsBrowsers().map {
             BrowserPackageInfo(it.packageName, it.label)
         }
         
         val syncLogs = syncLog.getEntries()
+        val notificationLogs = notificationLog.getEntries()
 
         SettingsUiState(
             isLoading = false,
@@ -63,6 +76,7 @@ class SettingsViewModel @Inject constructor(
             availableBrowsers = browsers,
             storedTopicsCount = totalTopics,
             syncLogs = syncLogs,
+            notificationLogs = notificationLogs,
             appVersion = BuildConfig.VERSION_NAME
         )
     }.stateIn(
@@ -90,6 +104,11 @@ class SettingsViewModel @Inject constructor(
                 syncLog.clear()
                 _refreshTrigger.value++
                 _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_sync_log_cleared)))
+            }
+            SettingsEvent.OnClearNotificationLog -> viewModelScope.launch {
+                notificationLog.clear()
+                _refreshTrigger.value++
+                _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_notification_log_cleared)))
             }
             SettingsEvent.OnManageNotifications -> viewModelScope.launch {
                 _effect.send(SettingsEffect.OpenNotificationSettings)

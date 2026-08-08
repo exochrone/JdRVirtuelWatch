@@ -25,6 +25,7 @@ class AppPreferences @Inject constructor(
         private val TEST_MODE_INTERVAL_MINUTES = intPreferencesKey("test_mode_interval_minutes")
         private val TEST_MODE_LOG = stringPreferencesKey("test_mode_log")
         private val SYNC_LOG = stringPreferencesKey("sync_log")
+        private val NOTIFICATION_LOG = stringPreferencesKey("notification_log")
         private val SIMULATE_CHALLENGE = booleanPreferencesKey("simulate_challenge")
     }
 
@@ -99,6 +100,19 @@ class AppPreferences @Inject constructor(
                 preferences.remove(SYNC_LOG)
             } else {
                 preferences[SYNC_LOG] = log
+            }
+        }
+    }
+
+    val notificationLog: Flow<String?> = dataStore.data
+        .map { preferences -> preferences[NOTIFICATION_LOG] }
+
+    suspend fun setNotificationLog(log: String?) {
+        dataStore.edit { preferences ->
+            if (log == null) {
+                preferences.remove(NOTIFICATION_LOG)
+            } else {
+                preferences[NOTIFICATION_LOG] = log
             }
         }
     }

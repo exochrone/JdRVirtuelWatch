@@ -143,6 +143,22 @@
     <string name="forum_detail_undo">Annuler</string>
     <string name="forum_detail_watch_enabled">Surveillance activée</string>
     <string name="forum_detail_watch_disabled">Surveillance désactivée</string>
+    <string name="forum_detail_state_visible">Sujet visible</string>
+    <string name="forum_detail_state_hidden">Sujet masqué</string>
+    <string name="forum_detail_state_watched">Sujet surveillé</string>
+    <string name="forum_detail_state_not_watched">Sujet non surveillé</string>
+    <string name="forum_detail_menu_refresh">Rafraîchir la liste</string>
+    <string name="forum_detail_menu_hide_full">Masquer les COMPLET</string>
+    <string name="forum_detail_hide_full_no_topics">Aucune partie complète à masquer</string>
+    <string name="forum_detail_hide_full_confirm_title">Masquer les parties complètes ?</string>
+    <plurals name="forum_detail_hide_full_confirm_message">
+        <item quantity="one">Voulez-vous masquer %1$d partie complète ?</item>
+        <item quantity="other">Voulez-vous masquer %1$d parties complètes ?</item>
+    </plurals>
+    <plurals name="forum_detail_hide_full_success">
+        <item quantity="one">%1$d partie complète masquée</item>
+        <item quantity="other">%1$d parties complètes masquées</item>
+    </plurals>
     <string name="forum_detail_no_browser">Aucun navigateur disponible</string>
 
     <!-- Notifications -->
@@ -187,11 +203,33 @@
     <string name="settings_sync_interval_60">Toutes les 60 minutes (blocage)</string>
     <string name="settings_data_cleared">Données effacées</string>
     <string name="settings_sync_log_cleared">Journal effacé</string>
+    <string name="settings_notification_log_cleared">Journal des notifications effacé</string>
     <string name="settings_browser_not_found">Navigateur non trouvé</string>
     <string name="sync_source_manual">Manuel</string>
     <string name="sync_source_auto">Auto</string>
     <string name="sync_source_test">Test</string>
     <string name="sync_status_ok">Ok</string>
+    <string name="sync_status_success">Succès</string>
     <string name="sync_status_blocked">Bloqué</string>
     <string name="sync_status_error">Erreur</string>
+    <plurals name="sync_log_parsed">
+        <item quantity="one">%1$d sujet</item>
+        <item quantity="other">%1$d sujets</item>
+    </plurals>
+    <plurals name="sync_log_new">
+        <item quantity="one">%1$d nouveau</item>
+        <item quantity="other">%1$d nouveaux</item>
+    </plurals>
+    <plurals name="sync_log_replies">
+        <item quantity="one">%1$d réponse</item>
+        <item quantity="other">%1$d réponses</item>
+    </plurals>
+    <string name="settings_section_notification_log">Journal des notifications</string>
+    <string name="settings_notification_log_empty">Journal vide</string>
+    <string name="settings_clear_notification_log">Effacer le journal</string>
+    <string name="settings_clear_notification_log_confirm_title">Effacer le journal ?</string>
+    <string name="settings_clear_notification_log_confirm_message">L\'historique des notifications sera définitivement supprimé.</string>
+    <string name="notification_type_new_topic">Nouveau sujet</string>
+    <string name="notification_type_new_reply">Nouvelle réponse</string>
+    <string name="notification_type_verification">Vérification requise</string>
 </resources>

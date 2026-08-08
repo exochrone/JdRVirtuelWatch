@@ -103,7 +103,6 @@ fun HomeScreen(
         
         viewModel.effects.collect { effect ->
             when (effect) {
-                is HomeEffect.NavigateToDebug -> { /* Removed from here */ }
                 is HomeEffect.NavigateToForum -> onNavigateToForum(effect.forumId)
                 is HomeEffect.NavigateToVerification -> onNavigateToVerification()
                 is HomeEffect.ShowMessage -> {

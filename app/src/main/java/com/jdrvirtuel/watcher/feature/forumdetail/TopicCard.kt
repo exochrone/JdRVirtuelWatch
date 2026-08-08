@@ -118,9 +118,9 @@ fun TopicCard(
                         Icon(
                             imageVector = if (topic.isWatched) Icons.Filled.Notifications else Icons.Outlined.NotificationsOff,
                             contentDescription = if (topic.isWatched) {
-                                stringResource(R.string.forum_detail_watch_disabled)
+                                stringResource(R.string.forum_detail_state_watched)
                             } else {
-                                stringResource(R.string.forum_detail_watch_enabled)
+                                stringResource(R.string.forum_detail_state_not_watched)
                             }
                         )
                     }
@@ -129,11 +129,11 @@ fun TopicCard(
                         onClick = { onToggleHidden(topic.id) }
                     ) {
                         Icon(
-                            imageVector = if (topic.isHidden) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                            imageVector = if (topic.isHidden) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                             contentDescription = if (topic.isHidden) {
-                                stringResource(R.string.forum_detail_show_hidden)
+                                stringResource(R.string.forum_detail_state_hidden)
                             } else {
-                                stringResource(R.string.forum_detail_topic_masked)
+                                stringResource(R.string.forum_detail_state_visible)
                             }
                         )
                     }

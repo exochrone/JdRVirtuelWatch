@@ -12,7 +12,8 @@ data class ForumDetailUiState(
     val errorMessage: String? = null,
     val totalTopicCount: Int = 0,
     val displayedTopicCount: Int = 0,
-    val hiddenTopicCount: Int = 0
+    val hiddenTopicCount: Int = 0,
+    val fullTopicsToHide: List<Int> = emptyList()
 )
 
 @Immutable
@@ -37,6 +38,9 @@ sealed interface ForumDetailEvent {
     data class OnToggleWatched(val topicId: Int) : ForumDetailEvent
     data class OnUndoHide(val topicId: Int, val wasWatched: Boolean) : ForumDetailEvent
     data object OnToggleShowHidden : ForumDetailEvent
+    data object OnHideAllFull : ForumDetailEvent
+    data class OnConfirmHideAllFull(val topicIds: List<Int>) : ForumDetailEvent
+    data class OnUndoHideAllFull(val topicIds: List<Int>) : ForumDetailEvent
     data object OnRefresh : ForumDetailEvent
     data object OnBack : ForumDetailEvent
 }
@@ -45,5 +49,6 @@ sealed interface ForumDetailEffect {
     data class OpenUrl(val url: String) : ForumDetailEffect
     data class ShowMessage(val message: String) : ForumDetailEffect
     data class ShowUndoHide(val topicId: Int, val wasWatched: Boolean) : ForumDetailEffect
+    data class ShowUndoHideAllFull(val topicIds: List<Int>) : ForumDetailEffect
     data object NavigateBack : ForumDetailEffect
 }

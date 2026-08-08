@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -161,15 +162,37 @@ private fun SyncLogItem(
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(1f)
                 )
+                val statusText = when (result.status) {
+                    SyncStatus.SUCCESS -> {
+                        val parsed = pluralStringResource(R.plurals.sync_log_parsed, result.parsedCount, result.parsedCount)
+                        val news = if (result.newTopicsCount > 0) pluralStringResource(R.plurals.sync_log_new, result.newTopicsCount, result.newTopicsCount) else null
+                        val replies = if (result.newRepliesCount > 0) pluralStringResource(R.plurals.sync_log_replies, result.newRepliesCount, result.newRepliesCount) else null
+                        
+                        buildString {
+                            append(stringResource(R.string.sync_status_success))
+                            append(" · ")
+                            append(parsed)
+                            if (news != null) {
+                                append(", ")
+                                append(news)
+                            }
+                            if (replies != null) {
+                                append(", ")
+                                append(replies)
+                            }
+                        }
+                    }
+                    SyncStatus.CHALLENGE_REQUIRED -> stringResource(R.string.sync_status_blocked)
+                    SyncStatus.ERROR -> "${stringResource(R.string.sync_status_error)}${if (result.errorMessage != null) " : ${result.errorMessage}" else ""}"
+                }
+
                 Text(
-                    text = when (result.status) {
-                        SyncStatus.SUCCESS -> if (result.newTopicsCount > 0) "+${result.newTopicsCount}" else stringResource(R.string.sync_status_ok)
-                        SyncStatus.CHALLENGE_REQUIRED -> stringResource(R.string.sync_status_blocked)
-                        SyncStatus.ERROR -> stringResource(R.string.sync_status_error)
-                    },
+                    text = statusText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (result.status == SyncStatus.SUCCESS && result.newTopicsCount > 0) {
+                    color = if (result.status == SyncStatus.SUCCESS && (result.newTopicsCount > 0 || result.newRepliesCount > 0)) {
                         MaterialTheme.colorScheme.primary
+                    } else if (result.status != SyncStatus.SUCCESS) {
+                        MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     }

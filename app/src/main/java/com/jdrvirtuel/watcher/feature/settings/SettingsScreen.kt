@@ -54,6 +54,7 @@ import com.jdrvirtuel.watcher.BuildConfig
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.component.LoadingState
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
+import com.jdrvirtuel.watcher.core.ui.theme.LocalCustomColors
 import com.jdrvirtuel.watcher.core.util.DateFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +69,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     var showClearDataDialog by remember { mutableStateOf(false) }
     var showClearLogDialog by remember { mutableStateOf(false) }
+    var showClearNotificationLogDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -136,14 +138,23 @@ fun SettingsScreen(
 
                 // Section Notifications
                 SettingsSectionTitle(stringResource(R.string.settings_section_notifications))
-                OutlinedButton(
+                Button(
                     onClick = { viewModel.onEvent(SettingsEvent.OnManageNotifications) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LocalCustomColors.current.notificationAction,
+                        contentColor = LocalCustomColors.current.onNotificationAction
+                    )
                 ) {
                     Icon(Icons.Default.Notifications, contentDescription = null)
                     Spacer(modifier = Modifier.width(Dimens.sm))
                     Text(stringResource(R.string.settings_manage_notifications))
                 }
+
+                NotificationLogSection(
+                    logs = uiState.notificationLogs,
+                    onClearLog = { showClearNotificationLogDialog = true }
+                )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
 
@@ -166,7 +177,10 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(Dimens.sm))
                 Button(
                     onClick = { showClearDataDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null)
@@ -241,13 +255,38 @@ fun SettingsScreen(
                     onClick = {
                         viewModel.onEvent(SettingsEvent.OnClearSyncLog)
                         showClearLogDialog = false
-                    }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text(stringResource(R.string.debug_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearLogDialog = false }) {
+                    Text(stringResource(R.string.debug_cancel))
+                }
+            }
+        )
+    }
+
+    if (showClearNotificationLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearNotificationLogDialog = false },
+            title = { Text(stringResource(R.string.settings_clear_notification_log_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_clear_notification_log_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.onEvent(SettingsEvent.OnClearNotificationLog)
+                        showClearNotificationLogDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.debug_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearNotificationLogDialog = false }) {
                     Text(stringResource(R.string.debug_cancel))
                 }
             }

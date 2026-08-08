@@ -84,12 +84,19 @@ donc plus le bouton de debug, ce qui allège l'écran principal.
 
 ## Icône de l'application
 
-Une icône adaptative est fournie, composée d'une forme simple évoquant un dé à vingt
-faces ou une loupe, dans les tons de la couleur d'amorce `#8C3B3B`. Elle est générée
-en vecteur, sans image bitmap.
+**Si le projet possède déjà une icône fournie par l'utilisateur, Gemini n'y touche
+pas.** Les fichiers `ic_launcher*` de `res/mipmap-*` et de `res/drawable` sont alors
+hors périmètre, quel que soit leur format.
+
+Ce n'est que si l'icône est encore celle générée par défaut par Android Studio, un
+robot vert sur fond blanc, qu'une icône est à produire : adaptative, en vecteur, sans
+image bitmap, composée d'une forme simple évoquant un dé à vingt faces ou une loupe,
+dans les tons de la couleur d'amorce `#8C3B3B`.
+
+Dans le doute, Gemini ne remplace rien et pose la question.
 
 Si Gemini ne peut pas produire un vecteur satisfaisant, il le signale et laisse
-l'icône par défaut, ce qui ne bloque pas la recette.
+l'icône en place, ce qui ne bloque pas la recette.
 
 ## Vérifications de qualité
 

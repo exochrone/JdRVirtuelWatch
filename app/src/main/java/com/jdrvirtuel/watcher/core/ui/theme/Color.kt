@@ -64,3 +64,8 @@ val UnreadContainerLight = Color(0xFF2E7D32) // Forest Green 800
 val OnUnreadContainerLight = Color(0xFFFFFFFF)
 val UnreadContainerDark = Color(0xFF81C784) // Green 300
 val OnUnreadContainerDark = Color(0xFF003300)
+
+val NotificationActionLight = Color(0xFF0061A4)
+val OnNotificationActionLight = Color(0xFFFFFFFF)
+val NotificationActionDark = Color(0xFF1B72C0)
+val OnNotificationActionDark = Color(0xFFFFFFFF)

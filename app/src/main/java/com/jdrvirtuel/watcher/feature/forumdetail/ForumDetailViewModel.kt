@@ -57,6 +57,7 @@ class ForumDetailViewModel @Inject constructor(
         } else {
             val totalCount = topics.size
             val hiddenCount = topics.count { it.isHidden }
+            val fullTopicsToHide = topics.filter { it.isFull && !it.isHidden && !it.isWatched }.map { it.id }
 
             val filteredTopics = topics
                 .filter { showHidden || !it.isHidden }
@@ -79,6 +80,7 @@ class ForumDetailViewModel @Inject constructor(
                 totalTopicCount = totalCount,
                 displayedTopicCount = displayedCount,
                 hiddenTopicCount = hiddenCount,
+                fullTopicsToHide = fullTopicsToHide,
                 errorMessage = when {
                     isEmpty -> context.getString(R.string.forum_detail_empty)
                     !showHidden && allHidden -> context.getString(R.string.forum_detail_all_hidden)
@@ -99,6 +101,15 @@ class ForumDetailViewModel @Inject constructor(
             is ForumDetailEvent.OnToggleWatched -> toggleWatched(event.topicId)
             is ForumDetailEvent.OnUndoHide -> undoHide(event.topicId, event.wasWatched)
             ForumDetailEvent.OnToggleShowHidden -> _showHidden.update { !it }
+            ForumDetailEvent.OnHideAllFull -> {
+                if (uiState.value.fullTopicsToHide.isEmpty()) {
+                    viewModelScope.launch {
+                        _effect.send(ForumDetailEffect.ShowMessage(context.getString(R.string.forum_detail_hide_full_no_topics)))
+                    }
+                }
+            }
+            is ForumDetailEvent.OnConfirmHideAllFull -> hideAllFull(event.topicIds)
+            is ForumDetailEvent.OnUndoHideAllFull -> undoHideAllFull(event.topicIds)
             ForumDetailEvent.OnRefresh -> refresh()
             ForumDetailEvent.OnBack -> viewModelScope.launch { _effect.send(ForumDetailEffect.NavigateBack) }
         }
@@ -152,6 +163,23 @@ class ForumDetailViewModel @Inject constructor(
             topicRepository.setHidden(topicId, false)
             if (wasWatched) {
                 topicRepository.setWatched(topicId, true)
+            }
+        }
+    }
+
+    private fun hideAllFull(topicIds: List<Int>) {
+        viewModelScope.launch {
+            topicIds.forEach { id ->
+                topicRepository.setHidden(id, true)
+            }
+            _effect.send(ForumDetailEffect.ShowUndoHideAllFull(topicIds))
+        }
+    }
+
+    private fun undoHideAllFull(topicIds: List<Int>) {
+        viewModelScope.launch {
+            topicIds.forEach { id ->
+                topicRepository.setHidden(id, false)
             }
         }
     }

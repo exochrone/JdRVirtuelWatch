@@ -85,11 +85,6 @@ class HomeViewModel @Inject constructor(
                 }
             }
             HomeEvent.OnRefresh -> sync()
-            HomeEvent.OnDebugClick -> {
-                viewModelScope.launch {
-                    _effects.send(HomeEffect.NavigateToDebug)
-                }
-            }
             HomeEvent.OnVerificationClick -> {
                 viewModelScope.launch {
                     _effects.send(HomeEffect.NavigateToVerification)

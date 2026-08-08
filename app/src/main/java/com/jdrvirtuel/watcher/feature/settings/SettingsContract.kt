@@ -1,6 +1,7 @@
 package com.jdrvirtuel.watcher.feature.settings
 
 import com.jdrvirtuel.watcher.domain.model.Forum
+import com.jdrvirtuel.watcher.domain.model.NotificationLogEntry
 import com.jdrvirtuel.watcher.domain.model.SyncLogEntry
 
 data class SettingsUiState(
@@ -12,6 +13,7 @@ data class SettingsUiState(
     val availableBrowsers: List<BrowserPackageInfo> = emptyList(),
     val storedTopicsCount: Int = 0,
     val syncLogs: List<SyncLogEntry> = emptyList(),
+    val notificationLogs: List<NotificationLogEntry> = emptyList(),
     val appVersion: String = ""
 )
 
@@ -25,6 +27,7 @@ sealed interface SettingsEvent {
     data class OnBrowserSelected(val packageName: String?) : SettingsEvent
     data object OnClearData : SettingsEvent
     data object OnClearSyncLog : SettingsEvent
+    data object OnClearNotificationLog : SettingsEvent
     data object OnManageNotifications : SettingsEvent
     data object OnDebugClick : SettingsEvent
 }

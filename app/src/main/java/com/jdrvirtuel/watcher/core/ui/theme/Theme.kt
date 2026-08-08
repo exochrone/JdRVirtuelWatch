@@ -15,13 +15,17 @@ import androidx.compose.ui.platform.LocalContext
 
 data class CustomColors(
     val unreadContainer: Color,
-    val onUnreadContainer: Color
+    val onUnreadContainer: Color,
+    val notificationAction: Color,
+    val onNotificationAction: Color
 )
 
 val LocalCustomColors = staticCompositionLocalOf {
     CustomColors(
         unreadContainer = Color.Unspecified,
-        onUnreadContainer = Color.Unspecified
+        onUnreadContainer = Color.Unspecified,
+        notificationAction = Color.Unspecified,
+        onNotificationAction = Color.Unspecified
     )
 }
 
@@ -91,9 +95,19 @@ fun JdrVirtuelWatcherTheme(
     }
 
     val customColors = if (darkTheme) {
-        CustomColors(unreadContainer = UnreadContainerDark, onUnreadContainer = OnUnreadContainerDark)
+        CustomColors(
+            unreadContainer = UnreadContainerDark,
+            onUnreadContainer = OnUnreadContainerDark,
+            notificationAction = NotificationActionDark,
+            onNotificationAction = OnNotificationActionDark
+        )
     } else {
-        CustomColors(unreadContainer = UnreadContainerLight, onUnreadContainer = OnUnreadContainerLight)
+        CustomColors(
+            unreadContainer = UnreadContainerLight,
+            onUnreadContainer = OnUnreadContainerLight,
+            notificationAction = NotificationActionLight,
+            onNotificationAction = OnNotificationActionLight
+        )
     }
 
     CompositionLocalProvider(LocalCustomColors provides customColors) {

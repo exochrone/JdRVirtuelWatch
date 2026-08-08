@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.jdrvirtuel.watcher.MainActivity
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.domain.model.Forum
+import com.jdrvirtuel.watcher.domain.model.NotificationType
 import com.jdrvirtuel.watcher.domain.model.Topic
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -16,12 +17,13 @@ import javax.inject.Singleton
 
 @Singleton
 class AppNotifier @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val notificationLog: NotificationLog
 ) {
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    fun notifyNewTopics(forum: Forum, topics: List<Topic>) {
+    suspend fun notifyNewTopics(forum: Forum, topics: List<Topic>) {
         if (topics.isEmpty()) return
 
         topics.forEach { topic ->
@@ -32,12 +34,18 @@ class AppNotifier @Inject constructor(
                 notificationId = NotificationIds.forNewTopic(topic.id)
             )
             notificationManager.notify(NotificationIds.forNewTopic(topic.id), notification)
+            
+            notificationLog.addEntry(
+                type = NotificationType.NEW_TOPIC,
+                forumName = forum.name,
+                topicTitle = topic.title
+            )
         }
         
         updateSummary(forum, NotificationChannels.NEW_TOPICS, topics)
     }
 
-    fun notifyNewReplies(forum: Forum, topics: List<Topic>) {
+    suspend fun notifyNewReplies(forum: Forum, topics: List<Topic>) {
         if (topics.isEmpty()) return
 
         topics.forEach { topic ->
@@ -49,12 +57,18 @@ class AppNotifier @Inject constructor(
                 isReply = true
             )
             notificationManager.notify(NotificationIds.forNewReply(topic.id), notification)
+            
+            notificationLog.addEntry(
+                type = NotificationType.NEW_REPLY,
+                forumName = forum.name,
+                topicTitle = topic.title
+            )
         }
         
         updateSummary(forum, NotificationChannels.NEW_REPLIES, topics)
     }
 
-    fun notifyVerificationRequired() {
+    suspend fun notifyVerificationRequired() {
         val intent = Intent(context, MainActivity::class.java).apply {
             data = Uri.parse("jdrvirtuel://verification")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -76,6 +90,8 @@ class AppNotifier @Inject constructor(
             .build()
 
         notificationManager.notify(42, notification)
+        
+        notificationLog.addEntry(type = NotificationType.VERIFICATION)
     }
 
     private fun createTopicNotification(

@@ -28,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -591,12 +592,29 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
                         }
                         Text("${df.format(Date(entry.timestampMs))} · $sourceStr", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                         entry.forumResults.forEach { res ->
-                            val details = buildString {
-                                append("   ${res.forumName} : ${res.status} · Nouveaux : ${res.newTopicsCount}")
-                                if (res.insertedCount > 0) append(" · Insérés : ${res.insertedCount}")
-                                if (res.updatedCount > 0) append(" · Màj : ${res.updatedCount}")
+                            val statusStr = when (res.status) {
+                                SyncStatus.SUCCESS -> {
+                                    val parsed = pluralStringResource(R.plurals.sync_log_parsed, res.parsedCount, res.parsedCount)
+                                    val news = if (res.newTopicsCount > 0) pluralStringResource(R.plurals.sync_log_new, res.newTopicsCount, res.newTopicsCount) else null
+                                    val replies = if (res.newRepliesCount > 0) pluralStringResource(R.plurals.sync_log_replies, res.newRepliesCount, res.newRepliesCount) else null
+                                    
+                                    buildString {
+                                        append("Succès · ")
+                                        append(parsed)
+                                        if (news != null) {
+                                            append(", ")
+                                            append(news)
+                                        }
+                                        if (replies != null) {
+                                            append(", ")
+                                            append(replies)
+                                        }
+                                    }
+                                }
+                                SyncStatus.CHALLENGE_REQUIRED -> "Bloqué"
+                                SyncStatus.ERROR -> "Erreur${if (res.errorMessage != null) " : ${res.errorMessage}" else ""}"
                             }
-                            Text(details, style = MaterialTheme.typography.bodySmall)
+                            Text("   ${res.forumName} : $statusStr", style = MaterialTheme.typography.bodySmall)
                         }
                         Spacer(modifier = Modifier.height(Dimens.xs))
                     }
