@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface TopicRepository {
     fun observeTopics(forumId: Int): Flow<List<Topic>>
     suspend fun getTopics(forumId: Int): List<Topic>
+    suspend fun getTopicById(id: Int): Topic?
     suspend fun upsertAll(topics: List<Topic>)
     suspend fun setHidden(id: Int, hidden: Boolean)
     suspend fun setWatched(id: Int, watched: Boolean)

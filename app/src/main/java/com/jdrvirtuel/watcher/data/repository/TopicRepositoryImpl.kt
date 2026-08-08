@@ -21,6 +21,9 @@ class TopicRepositoryImpl @Inject constructor(
     override suspend fun getTopics(forumId: Int): List<Topic> =
         topicDao.getByForum(forumId).map { it.toDomain() }
 
+    override suspend fun getTopicById(id: Int): Topic? =
+        topicDao.getById(id)?.toDomain()
+
     override suspend fun upsertAll(topics: List<Topic>) {
         topicDao.upsertAll(topics.map { it.toEntity() })
     }

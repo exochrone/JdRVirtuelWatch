@@ -52,9 +52,7 @@ class MainActivity : ComponentActivity() {
         if (data.scheme == "jdrvirtuel" && data.host == "topic") {
             val topicId = data.lastPathSegment?.toIntOrNull() ?: return
             lifecycleScope.launch {
-                // Find topic in either forum to get its URL
-                val topic = topicRepository.getTopics(15).find { it.id == topicId }
-                    ?: topicRepository.getTopics(16).find { it.id == topicId }
+                val topic = topicRepository.getTopicById(topicId)
                 
                 if (topic != null) {
                     topicRepository.setRead(topicId, true)
