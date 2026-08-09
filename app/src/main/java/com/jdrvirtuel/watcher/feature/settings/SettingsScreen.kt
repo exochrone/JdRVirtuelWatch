@@ -62,6 +62,7 @@ import com.jdrvirtuel.watcher.core.util.DateFormatter
 fun SettingsScreen(
     onBack: () -> Unit,
     onNavigateToDebug: () -> Unit,
+    onNavigateToDiagnostic: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -76,6 +77,7 @@ fun SettingsScreen(
             when (effect) {
                 SettingsEffect.NavigateBack -> onBack()
                 SettingsEffect.NavigateToDebug -> onNavigateToDebug()
+                SettingsEffect.NavigateToDiagnostic -> onNavigateToDiagnostic()
                 SettingsEffect.OpenNotificationSettings -> {
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                         data = Uri.fromParts("package", context.packageName, null)
@@ -194,6 +196,22 @@ fun SettingsScreen(
                 SyncLogSection(
                     logs = uiState.syncLogs,
                     onClearLog = { showClearLogDialog = true }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
+
+                // Section Diagnostic
+                SettingsSectionTitle(stringResource(R.string.settings_section_diagnostic))
+                OutlinedButton(
+                    onClick = { viewModel.onEvent(SettingsEvent.OnDiagnosticClick) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.settings_open_diagnostic))
+                }
+                Text(
+                    text = stringResource(R.string.settings_diagnostic_summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))

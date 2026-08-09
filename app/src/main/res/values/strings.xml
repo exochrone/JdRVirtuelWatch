@@ -232,4 +232,25 @@
     <string name="notification_type_new_topic">Nouveau sujet</string>
     <string name="notification_type_new_reply">Nouvelle réponse</string>
     <string name="notification_type_verification">Vérification requise</string>
+
+    <!-- Diagnostic -->
+    <string name="diagnostic_title">Diagnostic au démarrage</string>
+    <string name="diagnostic_intro">La surveillance automatique en arrière-plan nécessite quelques autorisations système pour fonctionner correctement.</string>
+    <string name="diagnostic_card_notifications_title">Autoriser les notifications</string>
+    <string name="diagnostic_card_notifications_desc">Sans cette autorisation, l\'application surveillera les forums mais ne pourra pas vous prévenir des nouveautés.</string>
+    <string name="diagnostic_card_notifications_action">Autoriser</string>
+    <string name="diagnostic_card_battery_title">Désactiver l\'optimisation de batterie</string>
+    <string name="diagnostic_card_battery_desc">Android peut suspendre la surveillance pour économiser la batterie. Une exemption permet de vérifier les forums régulièrement.</string>
+    <string name="diagnostic_card_battery_action">Régler</string>
+    <string name="diagnostic_card_manufacturer_title">Retirer l\'application des applications en veille</string>
+    <string name="diagnostic_card_manufacturer_desc">Certains fabricants, notamment Samsung, mettent en veille les applications peu utilisées, ce qui bloque totalement la surveillance. Retirez l\'application des listes « Applications en veille » et « Applications en veille profonde » (Paramètres > Batterie > Limites d\'utilisation en arrière-plan).</string>
+    <string name="diagnostic_card_manufacturer_action_open">Ouvrir les paramètres</string>
+    <string name="diagnostic_card_manufacturer_action_done">C\'est fait</string>
+    <string name="diagnostic_dismiss_label">Ne plus afficher ce diagnostic</string>
+    <string name="diagnostic_continue">Continuer</string>
+
+    <!-- Settings Diagnostic -->
+    <string name="settings_section_diagnostic">Diagnostic</string>
+    <string name="settings_open_diagnostic">Vérifier les réglages système</string>
+    <string name="settings_diagnostic_summary">Vérifie les permissions et optimisations de batterie.</string>
 </resources>

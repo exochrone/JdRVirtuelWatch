@@ -16,3 +16,6 @@ data class ForumDetailRoute(val forumId: Int)
 
 @Serializable
 data object VerificationRoute
+
+@Serializable
+data object DiagnosticRoute

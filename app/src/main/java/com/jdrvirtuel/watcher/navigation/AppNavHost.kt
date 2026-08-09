@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import androidx.navigation.navDeepLink
+import com.jdrvirtuel.watcher.feature.diagnostic.DiagnosticScreen
 import com.jdrvirtuel.watcher.feature.debug.DebugScreen
 import com.jdrvirtuel.watcher.feature.forumdetail.ForumDetailScreen
 import com.jdrvirtuel.watcher.feature.forumdetail.ForumDetailViewModel
@@ -22,11 +23,12 @@ import com.jdrvirtuel.watcher.feature.verification.VerificationScreen
 @Composable
 fun AppNavHost(
     navController: NavHostController,
+    startDestination: Any = HomeRoute,
     modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = HomeRoute,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable<HomeRoute> {
@@ -36,10 +38,20 @@ fun AppNavHost(
                 onNavigateToVerification = { navController.navigate(VerificationRoute) }
             )
         }
+        composable<DiagnosticRoute> {
+            DiagnosticScreen(
+                onNavigateToHome = {
+                    navController.navigate(HomeRoute) {
+                        popUpTo(DiagnosticRoute) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable<SettingsRoute> {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToDebug = { navController.navigate(DebugRoute) }
+                onNavigateToDebug = { navController.navigate(DebugRoute) },
+                onNavigateToDiagnostic = { navController.navigate(DiagnosticRoute) }
             )
         }
         composable<DebugRoute> {

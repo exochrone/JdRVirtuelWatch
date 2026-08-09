@@ -30,11 +30,13 @@ sealed interface SettingsEvent {
     data object OnClearNotificationLog : SettingsEvent
     data object OnManageNotifications : SettingsEvent
     data object OnDebugClick : SettingsEvent
+    data object OnDiagnosticClick : SettingsEvent
 }
 
 sealed interface SettingsEffect {
     data object NavigateBack : SettingsEffect
     data object NavigateToDebug : SettingsEffect
+    data object NavigateToDiagnostic : SettingsEffect
     data object OpenNotificationSettings : SettingsEffect
     data class ShowMessage(val message: String) : SettingsEffect
 }

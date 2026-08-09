@@ -116,6 +116,10 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.OnDebugClick -> viewModelScope.launch {
                 _effect.send(SettingsEffect.NavigateToDebug)
             }
+            SettingsEvent.OnDiagnosticClick -> viewModelScope.launch {
+                appPreferences.setDiagnosticDismissed(false)
+                _effect.send(SettingsEffect.NavigateToDiagnostic)
+            }
         }
     }
 }
