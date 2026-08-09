@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.ui.theme.Dimens
@@ -193,9 +194,9 @@ private fun SyncLogItem(
                 Spacer(modifier = Modifier.width(Dimens.sm))
                 Text(
                     text = result.forumName,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.weight(1f)
+                    style = MaterialTheme.typography.bodySmall
                 )
+                Spacer(modifier = Modifier.width(Dimens.sm))
                 val statusText = when (result.status) {
                     SyncStatus.SUCCESS -> {
                         val parsed = pluralStringResource(R.plurals.sync_log_parsed, result.parsedCount, result.parsedCount)
@@ -223,6 +224,8 @@ private fun SyncLogItem(
                 Text(
                     text = statusText,
                     style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End,
                     color = if (result.status == SyncStatus.SUCCESS && (result.newTopicsCount > 0 || result.newRepliesCount > 0)) {
                         MaterialTheme.colorScheme.primary
                     } else if (result.status != SyncStatus.SUCCESS) {
