@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
@@ -18,6 +21,8 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -48,6 +53,7 @@ import com.jdrvirtuel.watcher.domain.model.SyncStatus
 fun SyncLogSection(
     logs: List<SyncLogEntry>,
     onClearLog: () -> Unit,
+    onExportLog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -81,22 +87,50 @@ fun SyncLogSection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    logs.forEach { entry ->
-                        SyncLogItem(entry = entry)
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = Dimens.xs),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 600.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                         )
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .padding(Dimens.sm)
+                                .fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.xs)
+                        ) {
+                            items(logs.size) { index ->
+                                SyncLogItem(entry = logs[index])
+                                if (index < logs.size - 1) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(vertical = Dimens.xs),
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                     
-                    Spacer(modifier = Modifier.height(Dimens.md))
-                    
-                    TextButton(
-                        onClick = onClearLog,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.sm)
                     ) {
-                        Text(stringResource(R.string.settings_clear_sync_log))
+                        TextButton(
+                            onClick = onExportLog,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.log_export))
+                        }
+                        TextButton(
+                            onClick = onClearLog,
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.settings_clear_sync_log))
+                        }
                     }
                 }
             }

@@ -95,6 +95,7 @@ sealed interface DebugEvent {
     data object StartBench : DebugEvent
     data object StopBench : DebugEvent
     data object ClearBenchLogs : DebugEvent
+    data object ExportBenchLogs : DebugEvent
     data object CopyBenchLogs : DebugEvent
 
     // Browser Debug
@@ -111,6 +112,8 @@ sealed interface DebugEvent {
     data object StartTestMode : DebugEvent
     data object StopTestMode : DebugEvent
     data object ClearTestModeLog : DebugEvent
+    data object ExportTestModeLog : DebugEvent
+    data object ExportSyncLog : DebugEvent
 
     // Cloudflare Debug
     data object ClearCookies : DebugEvent

@@ -50,7 +50,7 @@ class WebViewForumPageSource @Inject constructor(
             }
             
             result
-        } ?: FetchResult.Error("Dépassement du délai de récupération (50s)")
+        } ?: FetchResult.Error("Dépassement du délai de récupération (${WebViewConstants.FETCH_TIMEOUT_MS / 1000}s)")
     }
 
     @SuppressLint("SetJavaScriptEnabled")

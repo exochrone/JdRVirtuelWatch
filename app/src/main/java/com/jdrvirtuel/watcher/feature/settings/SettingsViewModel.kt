@@ -6,8 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.jdrvirtuel.watcher.BuildConfig
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.util.BrowserLauncher
+import com.jdrvirtuel.watcher.core.util.DateFormatter
+import com.jdrvirtuel.watcher.core.util.LogExporter
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.Forum
+import com.jdrvirtuel.watcher.domain.model.NotificationType
+import com.jdrvirtuel.watcher.domain.model.SyncSource
+import com.jdrvirtuel.watcher.domain.model.SyncStatus
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.notification.NotificationLog
@@ -32,7 +37,8 @@ class SettingsViewModel @Inject constructor(
     private val topicRepository: TopicRepository,
     private val appPreferences: AppPreferences,
     private val syncLog: SyncLog,
-    private val notificationLog: NotificationLog
+    private val notificationLog: NotificationLog,
+    private val logExporter: LogExporter
 ) : ViewModel() {
 
     private val browserLauncher = BrowserLauncher(context, appPreferences, viewModelScope)
@@ -105,10 +111,22 @@ class SettingsViewModel @Inject constructor(
                 _refreshTrigger.value++
                 _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_sync_log_cleared)))
             }
+            SettingsEvent.OnExportSyncLog -> viewModelScope.launch {
+                val logs = uiState.value.syncLogs
+                if (logs.isEmpty()) return@launch
+                val text = formatSyncLogs(logs)
+                logExporter.export(text, context.getString(R.string.settings_section_sync_log))
+            }
             SettingsEvent.OnClearNotificationLog -> viewModelScope.launch {
                 notificationLog.clear()
                 _refreshTrigger.value++
                 _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_notification_log_cleared)))
+            }
+            SettingsEvent.OnExportNotificationLog -> viewModelScope.launch {
+                val logs = uiState.value.notificationLogs
+                if (logs.isEmpty()) return@launch
+                val text = formatNotificationLogs(logs)
+                logExporter.export(text, context.getString(R.string.settings_section_notification_log))
             }
             SettingsEvent.OnManageNotifications -> viewModelScope.launch {
                 _effect.send(SettingsEffect.OpenNotificationSettings)
@@ -119,6 +137,60 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.OnDiagnosticClick -> viewModelScope.launch {
                 appPreferences.setDiagnosticDismissed(false)
                 _effect.send(SettingsEffect.NavigateToDiagnostic)
+            }
+        }
+    }
+
+    private fun formatSyncLogs(logs: List<com.jdrvirtuel.watcher.domain.model.SyncLogEntry>): String {
+        return logs.joinToString("\n\n") { entry ->
+            val timestamp = DateFormatter.formatRelative(entry.timestampMs)
+            val source = when (entry.source) {
+                SyncSource.MANUAL -> context.getString(R.string.sync_source_manual)
+                SyncSource.PERIODIC -> context.getString(R.string.sync_source_auto)
+                SyncSource.TEST -> context.getString(R.string.sync_source_test)
+            }
+            val results = entry.forumResults.joinToString("\n") { res ->
+                val status = when (res.status) {
+                    SyncStatus.SUCCESS -> {
+                        val parsed = context.resources.getQuantityString(R.plurals.sync_log_parsed, res.parsedCount, res.parsedCount)
+                        val news = if (res.newTopicsCount > 0) context.resources.getQuantityString(R.plurals.sync_log_new, res.newTopicsCount, res.newTopicsCount) else null
+                        val replies = if (res.newRepliesCount > 0) context.resources.getQuantityString(R.plurals.sync_log_replies, res.newRepliesCount, res.newRepliesCount) else null
+                        
+                        buildString {
+                            append(context.getString(R.string.sync_status_success))
+                            append(" · ")
+                            append(parsed)
+                            if (news != null) append(", $news")
+                            if (replies != null) append(", $replies")
+                        }
+                    }
+                    SyncStatus.CHALLENGE_REQUIRED -> context.getString(R.string.sync_status_blocked)
+                    SyncStatus.ERROR -> "${context.getString(R.string.sync_status_error)}${if (res.errorMessage != null) " : ${res.errorMessage}" else ""}"
+                }
+                "   ${res.forumName} : $status"
+            }
+            "$timestamp · $source\n$results"
+        }
+    }
+
+    private fun formatNotificationLogs(logs: List<com.jdrvirtuel.watcher.domain.model.NotificationLogEntry>): String {
+        val dateFormat = java.text.SimpleDateFormat("dd/MM/yy - HH:mm:ss", java.util.Locale.getDefault())
+        return logs.joinToString("\n\n") { entry ->
+            val typeStr = when (entry.type) {
+                NotificationType.NEW_TOPIC -> context.getString(R.string.notification_type_new_topic)
+                NotificationType.NEW_REPLY -> context.getString(R.string.notification_type_new_reply)
+                NotificationType.VERIFICATION -> context.getString(R.string.notification_type_verification)
+            }
+            val header = buildString {
+                append(dateFormat.format(java.util.Date(entry.timestampMs)))
+                append(" · ")
+                append(typeStr)
+                if (entry.forumName != null) append(" · ${entry.forumName}")
+            }
+            if (entry.topicTitle != null) {
+                "$header\n${entry.topicTitle}"
+            } else {
+                header
             }
         }
     }

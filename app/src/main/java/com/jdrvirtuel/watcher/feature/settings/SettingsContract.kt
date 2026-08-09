@@ -27,7 +27,9 @@ sealed interface SettingsEvent {
     data class OnBrowserSelected(val packageName: String?) : SettingsEvent
     data object OnClearData : SettingsEvent
     data object OnClearSyncLog : SettingsEvent
+    data object OnExportSyncLog : SettingsEvent
     data object OnClearNotificationLog : SettingsEvent
+    data object OnExportNotificationLog : SettingsEvent
     data object OnManageNotifications : SettingsEvent
     data object OnDebugClick : SettingsEvent
     data object OnDiagnosticClick : SettingsEvent

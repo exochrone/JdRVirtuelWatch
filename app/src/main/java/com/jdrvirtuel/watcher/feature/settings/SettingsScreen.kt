@@ -155,7 +155,8 @@ fun SettingsScreen(
 
                 NotificationLogSection(
                     logs = uiState.notificationLogs,
-                    onClearLog = { showClearNotificationLogDialog = true }
+                    onClearLog = { showClearNotificationLogDialog = true },
+                    onExportLog = { viewModel.onEvent(SettingsEvent.OnExportNotificationLog) }
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
@@ -195,7 +196,8 @@ fun SettingsScreen(
                 // Section Journal
                 SyncLogSection(
                     logs = uiState.syncLogs,
-                    onClearLog = { showClearLogDialog = true }
+                    onClearLog = { showClearLogDialog = true },
+                    onExportLog = { viewModel.onEvent(SettingsEvent.OnExportSyncLog) }
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))

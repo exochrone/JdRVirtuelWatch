@@ -12,6 +12,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.jdrvirtuel.watcher.core.util.BrowserLauncher
+import com.jdrvirtuel.watcher.core.util.DateFormatter
+import com.jdrvirtuel.watcher.core.util.LogExporter
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.data.parser.TopicListParser
 import com.jdrvirtuel.watcher.domain.model.FetchResult
@@ -28,6 +30,9 @@ import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
 import com.jdrvirtuel.watcher.work.SyncScheduler
 import com.jdrvirtuel.watcher.work.TestModeLog
 import android.webkit.CookieManager
+import com.jdrvirtuel.watcher.domain.model.SyncStatus
+import com.jdrvirtuel.watcher.domain.model.SyncSource
+import com.jdrvirtuel.watcher.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -62,6 +67,7 @@ class DebugViewModel @Inject constructor(
     private val workManager: WorkManager,
     private val syncScheduler: SyncScheduler,
     private val testModeLog: TestModeLog,
+    private val logExporter: LogExporter,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -214,6 +220,7 @@ class DebugViewModel @Inject constructor(
             DebugEvent.ClearBenchLogs -> {
                 _benchState.update { it.copy(logs = emptyList()) }
             }
+            DebugEvent.ExportBenchLogs -> exportBenchLogs()
             DebugEvent.CopyBenchLogs -> copyBenchLogs()
             DebugEvent.RefreshBrowserInfo -> refreshBrowserInfo()
             is DebugEvent.SetPreferredBrowser -> {
@@ -242,6 +249,18 @@ class DebugViewModel @Inject constructor(
             DebugEvent.ClearTestModeLog -> {
                 viewModelScope.launch {
                     testModeLog.clear()
+                }
+            }
+            DebugEvent.ExportTestModeLog -> {
+                val logs = uiState.value.testModeLog
+                if (logs.isNotEmpty()) {
+                    logExporter.export(logs.joinToString("\n") { it.format() }, "Test Mode Log")
+                }
+            }
+            DebugEvent.ExportSyncLog -> {
+                val logs = uiState.value.syncLog
+                if (logs.isNotEmpty()) {
+                    logExporter.export(formatSyncLogs(logs), "Sync Log")
                 }
             }
             DebugEvent.ClearCookies -> {
@@ -369,6 +388,20 @@ class DebugViewModel @Inject constructor(
         val logs = _benchState.value.logs
         if (logs.isEmpty()) return
         
+        val sb = formatBenchLogs(logs)
+        
+        viewModelScope.launch {
+            _effect.send(DebugEffect.CopyToClipboard(sb))
+        }
+    }
+
+    private fun exportBenchLogs() {
+        val logs = _benchState.value.logs
+        if (logs.isEmpty()) return
+        logExporter.export(formatBenchLogs(logs), "Bench Logs")
+    }
+
+    private fun formatBenchLogs(logs: List<BenchEntry>): String {
         val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         val sb = StringBuilder()
         logs.forEach { entry ->
@@ -379,9 +412,37 @@ class DebugViewModel @Inject constructor(
             if (entry.htmlSize != null) sb.append(" | ${entry.htmlSize} octets")
             sb.append("\n")
         }
-        
-        viewModelScope.launch {
-            _effect.send(DebugEffect.CopyToClipboard(sb.toString()))
+        return sb.toString()
+    }
+
+    private fun formatSyncLogs(logs: List<com.jdrvirtuel.watcher.domain.model.SyncLogEntry>): String {
+        return logs.joinToString("\n\n") { entry ->
+            val timestamp = SimpleDateFormat("dd/MM/yy - HH:mm:ss", Locale.getDefault()).format(Date(entry.timestampMs))
+            val source = when (entry.source) {
+                SyncSource.MANUAL -> "Manuelle"
+                SyncSource.PERIODIC -> "Automatique"
+                SyncSource.TEST -> "Test"
+            }
+            val results = entry.forumResults.joinToString("\n") { res ->
+                val status = when (res.status) {
+                    SyncStatus.SUCCESS -> {
+                        val parsed = context.resources.getQuantityString(R.plurals.sync_log_parsed, res.parsedCount, res.parsedCount)
+                        val news = if (res.newTopicsCount > 0) context.resources.getQuantityString(R.plurals.sync_log_new, res.newTopicsCount, res.newTopicsCount) else null
+                        val replies = if (res.newRepliesCount > 0) context.resources.getQuantityString(R.plurals.sync_log_replies, res.newRepliesCount, res.newRepliesCount) else null
+                        
+                        buildString {
+                            append("Succès · ")
+                            append(parsed)
+                            if (news != null) append(", $news")
+                            if (replies != null) append(", $replies")
+                        }
+                    }
+                    SyncStatus.CHALLENGE_REQUIRED -> "Bloqué"
+                    SyncStatus.ERROR -> "Erreur${if (res.errorMessage != null) " : ${res.errorMessage}" else ""}"
+                }
+                "   ${res.forumName} : $status"
+            }
+            "$timestamp · $source\n$results"
         }
     }
 

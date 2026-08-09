@@ -232,6 +232,7 @@
     <string name="notification_type_new_topic">Nouveau sujet</string>
     <string name="notification_type_new_reply">Nouvelle réponse</string>
     <string name="notification_type_verification">Vérification requise</string>
+    <string name="log_export">Exporter</string>
 
     <!-- Diagnostic -->
     <string name="diagnostic_title">Diagnostic au démarrage</string>

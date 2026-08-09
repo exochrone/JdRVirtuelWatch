@@ -307,10 +307,10 @@ fun NetworkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
         uiState.fetchResult?.let { Text(it, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold) }
         uiState.htmlContent?.let { html ->
             Text(stringResource(R.string.debug_html_size, uiState.htmlSize), style = MaterialTheme.typography.bodySmall)
-            Card(modifier = Modifier.fillMaxWidth().height(150.dp).padding(vertical = Dimens.xs)) {
+            Card(modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp).padding(vertical = Dimens.xs)) {
                 SelectionContainer {
                     val scroll = rememberScrollState()
-                    Text(html.take(1000), modifier = Modifier.padding(Dimens.xs).verticalScroll(scroll), style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
+                    Text(html.take(5000), modifier = Modifier.padding(Dimens.xs).verticalScroll(scroll), style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
                 }
             }
             Button(onClick = { onEvent(DebugEvent.CopyToClipboard(html)) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.debug_copy_html)) }
@@ -328,7 +328,11 @@ fun ParserSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
         }
         uiState.parseResult?.let { res ->
             Text(stringResource(R.string.debug_parse_result, res.topics.size, res.skippedSticky, res.skippedInvalid), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-            res.topics.forEach { ParsedTopicDebugItem(it, dateFormat) }
+            Card(modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs).heightIn(max = 600.dp)) {
+                    items(res.topics) { ParsedTopicDebugItem(it, dateFormat) }
+                }
+            }
         }
     }
 }
@@ -418,12 +422,13 @@ fun BenchSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
             Button(onClick = { onEvent(DebugEvent.ClearBenchLogs) }, modifier = Modifier.weight(1f)) { Text("Reset Log") }
-            Button(onClick = { onEvent(DebugEvent.CopyBenchLogs) }, enabled = uiState.benchLogs.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Copier Log") }
+            Button(onClick = { onEvent(DebugEvent.ExportBenchLogs) }, enabled = uiState.benchLogs.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Exporter") }
+            Button(onClick = { onEvent(DebugEvent.CopyBenchLogs) }, enabled = uiState.benchLogs.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("Copier") }
         }
         if (uiState.benchLogs.isNotEmpty()) {
             val df = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-            Card(modifier = Modifier.fillMaxWidth().height(200.dp).padding(vertical = Dimens.xs)) {
-                LazyColumn(modifier = Modifier.padding(Dimens.xs)) {
+            Card(modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs).heightIn(max = 600.dp)) {
                     items(uiState.benchLogs) { e ->
                         val el = e.timeSinceStartMs / 1000
                         Text("${df.format(Date(e.timestamp))} | +${el/60}m${el%60}s | ${e.result}${e.htmlSize?.let { " | $it oct." } ?: ""}", style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
@@ -563,12 +568,15 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
             Button(onClick = { onEvent(DebugEvent.ClearTestModeLog) }, modifier = Modifier.weight(1f)) {
                 Text("Vider Log")
             }
+            Button(onClick = { onEvent(DebugEvent.ExportTestModeLog) }, enabled = uiState.testModeLog.isNotEmpty(), modifier = Modifier.weight(1f)) {
+                Text("Exporter")
+            }
         }
 
         if (uiState.testModeLog.isNotEmpty()) {
             Text("Journal (récent en haut) :", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = Dimens.sm))
-            Card(modifier = Modifier.fillMaxWidth().height(200.dp).padding(vertical = Dimens.xs)) {
-                LazyColumn(modifier = Modifier.padding(Dimens.xs)) {
+            Card(modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs).heightIn(max = 600.dp)) {
                     items(uiState.testModeLog) { entry ->
                         Text(entry.format(), style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
                     }
@@ -578,11 +586,23 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
 
         HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.sm))
 
-        Text("Journal permanent (50 max) :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Journal permanent (50 max) :", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            if (uiState.syncLog.isNotEmpty()) {
+                TextButton(onClick = { onEvent(DebugEvent.ExportSyncLog) }) {
+                    Text("Exporter")
+                }
+            }
+        }
+
         if (uiState.syncLog.isNotEmpty()) {
             val df = remember { SimpleDateFormat("dd/MM/yy - HH:mm:ss", Locale.getDefault()) }
-            Card(modifier = Modifier.fillMaxWidth().height(300.dp).padding(vertical = Dimens.xs)) {
-                LazyColumn(modifier = Modifier.padding(Dimens.xs)) {
+            Card(modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp).padding(vertical = Dimens.xs)) {
+                LazyColumn(modifier = Modifier.padding(Dimens.xs).heightIn(max = 600.dp)) {
                     items(uiState.syncLog) { entry ->
                         val sourceStr = when(entry.source) {
                             SyncSource.MANUAL -> "Manuelle"
