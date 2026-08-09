@@ -27,6 +27,7 @@ import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
 import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
+import com.jdrvirtuel.watcher.work.SyncLog
 import com.jdrvirtuel.watcher.work.SyncScheduler
 import com.jdrvirtuel.watcher.work.TestModeLog
 import android.webkit.CookieManager
@@ -67,6 +68,7 @@ class DebugViewModel @Inject constructor(
     private val workManager: WorkManager,
     private val syncScheduler: SyncScheduler,
     private val testModeLog: TestModeLog,
+    private val syncLogService: SyncLog,
     private val logExporter: LogExporter,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -417,7 +419,7 @@ class DebugViewModel @Inject constructor(
 
     private fun formatSyncLogs(logs: List<com.jdrvirtuel.watcher.domain.model.SyncLogEntry>): String {
         return logs.joinToString("\n\n") { entry ->
-            val timestamp = SimpleDateFormat("dd/MM/yy - HH:mm:ss", Locale.getDefault()).format(Date(entry.timestampMs))
+            val timestamp = DateFormatter.formatLogDate(entry.timestampMs)
             val source = when (entry.source) {
                 SyncSource.MANUAL -> "Manuelle"
                 SyncSource.PERIODIC -> "Automatique"
@@ -451,6 +453,7 @@ class DebugViewModel @Inject constructor(
         viewModelScope.launch {
             _syncState.update { it.copy(isSyncing = true) }
             val outcome = syncForumUseCase(forumId)
+            syncLogService.addEntry(SyncSource.MANUAL, listOf(outcome))
             _syncState.update { it.copy(isSyncing = false, lastOutcome = outcome) }
         }
     }
@@ -460,6 +463,7 @@ class DebugViewModel @Inject constructor(
         viewModelScope.launch {
             _syncState.update { it.copy(isSyncing = true) }
             val outcomes = syncAllForumsUseCase()
+            syncLogService.addEntry(SyncSource.MANUAL, outcomes)
             _syncState.update { it.copy(isSyncing = false, lastOutcome = outcomes.lastOrNull()) }
         }
     }

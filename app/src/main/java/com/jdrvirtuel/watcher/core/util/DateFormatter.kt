@@ -48,4 +48,12 @@ object DateFormatter {
             }
         }
     }
+
+    private val logFormatter = DateTimeFormatter.ofPattern("dd/MM/yy - HH:mm:ss", Locale.getDefault())
+
+    fun formatLogDate(timestamp: Long): String {
+        val instant = Instant.ofEpochMilli(timestamp)
+        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+        return logFormatter.format(dateTime)
+    }
 }

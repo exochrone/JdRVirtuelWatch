@@ -205,8 +205,8 @@
     <string name="settings_sync_log_cleared">Journal effacé</string>
     <string name="settings_notification_log_cleared">Journal des notifications effacé</string>
     <string name="settings_browser_not_found">Navigateur non trouvé</string>
-    <string name="sync_source_manual">Manuel</string>
-    <string name="sync_source_auto">Auto</string>
+    <string name="sync_source_manual">Manuelle</string>
+    <string name="sync_source_auto">Automatique</string>
     <string name="sync_source_test">Test</string>
     <string name="sync_status_ok">Ok</string>
     <string name="sync_status_success">Succès</string>

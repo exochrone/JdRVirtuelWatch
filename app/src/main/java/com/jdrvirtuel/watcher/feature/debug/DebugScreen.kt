@@ -600,7 +600,6 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
         }
 
         if (uiState.syncLog.isNotEmpty()) {
-            val df = remember { SimpleDateFormat("dd/MM/yy - HH:mm:ss", Locale.getDefault()) }
             Card(modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp).padding(vertical = Dimens.xs)) {
                 LazyColumn(modifier = Modifier.padding(Dimens.xs).heightIn(max = 600.dp)) {
                     items(uiState.syncLog) { entry ->
@@ -608,9 +607,8 @@ fun WorkSection(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
                             SyncSource.MANUAL -> "Manuelle"
                             SyncSource.PERIODIC -> "Automatique"
                             SyncSource.TEST -> "Test"
-                            else -> "Inconnue"
                         }
-                        Text("${df.format(Date(entry.timestampMs))} · $sourceStr", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                        Text("${com.jdrvirtuel.watcher.core.util.DateFormatter.formatLogDate(entry.timestampMs)} · $sourceStr", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                         entry.forumResults.forEach { res ->
                             val statusStr = when (res.status) {
                                 SyncStatus.SUCCESS -> {

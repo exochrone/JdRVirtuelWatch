@@ -80,8 +80,6 @@ fun NotificationLogSection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    val dateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm:ss", Locale.getDefault()) }
-                    
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -97,7 +95,7 @@ fun NotificationLogSection(
                             verticalArrangement = Arrangement.spacedBy(Dimens.xs)
                         ) {
                             items(logs.size) { index ->
-                                NotificationLogItem(entry = logs[index], dateFormat = dateFormat)
+                                NotificationLogItem(entry = logs[index])
                                 if (index < logs.size - 1) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(vertical = Dimens.xs),
@@ -136,7 +134,6 @@ fun NotificationLogSection(
 @Composable
 private fun NotificationLogItem(
     entry: NotificationLogEntry,
-    dateFormat: SimpleDateFormat,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -151,7 +148,7 @@ private fun NotificationLogItem(
         }
         
         val header = buildString {
-            append(dateFormat.format(Date(entry.timestampMs)))
+            append(DateFormatter.formatLogDate(entry.timestampMs))
             append(" · ")
             append(typeStr)
             if (entry.forumName != null) {

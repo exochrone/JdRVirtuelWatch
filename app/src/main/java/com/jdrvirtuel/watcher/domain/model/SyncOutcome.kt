@@ -1,5 +1,7 @@
 package com.jdrvirtuel.watcher.domain.model
 
+import kotlinx.serialization.Serializable
+
 data class SyncOutcome(
     val forumId: Int,
     val status: SyncStatus,
@@ -12,4 +14,5 @@ data class SyncOutcome(
     val errorMessage: String? = null
 )
 
+@Serializable
 enum class SyncStatus { SUCCESS, CHALLENGE_REQUIRED, ERROR }

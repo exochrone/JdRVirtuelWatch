@@ -153,7 +153,7 @@ private fun SyncLogItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = DateFormatter.formatRelative(entry.timestampMs),
+                text = DateFormatter.formatLogDate(entry.timestampMs),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold
             )

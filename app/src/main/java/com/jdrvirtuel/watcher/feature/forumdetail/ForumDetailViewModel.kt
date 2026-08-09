@@ -9,11 +9,13 @@ import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.util.DateFormatter
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
+import com.jdrvirtuel.watcher.domain.model.SyncSource
 import com.jdrvirtuel.watcher.domain.model.Topic
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
 import com.jdrvirtuel.watcher.navigation.ForumDetailRoute
+import com.jdrvirtuel.watcher.work.SyncLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -33,6 +35,7 @@ class ForumDetailViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val syncForumUseCase: SyncForumUseCase,
+    private val syncLog: SyncLog,
     val appPreferences: AppPreferences,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -191,6 +194,7 @@ class ForumDetailViewModel @Inject constructor(
             _isSyncing.value = true
             try {
                 val outcome = syncForumUseCase(forumId)
+                syncLog.addEntry(SyncSource.MANUAL, listOf(outcome))
                 val message = when (outcome.status) {
                     SyncStatus.SUCCESS -> {
                         if (outcome.newTopics.isEmpty()) context.getString(R.string.home_sync_success_no_news)

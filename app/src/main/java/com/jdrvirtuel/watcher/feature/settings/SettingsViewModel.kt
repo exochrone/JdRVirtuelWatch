@@ -143,7 +143,7 @@ class SettingsViewModel @Inject constructor(
 
     private fun formatSyncLogs(logs: List<com.jdrvirtuel.watcher.domain.model.SyncLogEntry>): String {
         return logs.joinToString("\n\n") { entry ->
-            val timestamp = DateFormatter.formatRelative(entry.timestampMs)
+            val timestamp = DateFormatter.formatLogDate(entry.timestampMs)
             val source = when (entry.source) {
                 SyncSource.MANUAL -> context.getString(R.string.sync_source_manual)
                 SyncSource.PERIODIC -> context.getString(R.string.sync_source_auto)
@@ -174,7 +174,6 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun formatNotificationLogs(logs: List<com.jdrvirtuel.watcher.domain.model.NotificationLogEntry>): String {
-        val dateFormat = java.text.SimpleDateFormat("dd/MM/yy - HH:mm:ss", java.util.Locale.getDefault())
         return logs.joinToString("\n\n") { entry ->
             val typeStr = when (entry.type) {
                 NotificationType.NEW_TOPIC -> context.getString(R.string.notification_type_new_topic)
@@ -182,7 +181,7 @@ class SettingsViewModel @Inject constructor(
                 NotificationType.VERIFICATION -> context.getString(R.string.notification_type_verification)
             }
             val header = buildString {
-                append(dateFormat.format(java.util.Date(entry.timestampMs)))
+                append(DateFormatter.formatLogDate(entry.timestampMs))
                 append(" · ")
                 append(typeStr)
                 if (entry.forumName != null) append(" · ${entry.forumName}")
