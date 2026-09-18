@@ -11,8 +11,10 @@ data class HomeUiState(
 data class ForumUiModel(
     val id: Int,
     val name: String,
-    val topicCount: Int,
+    val visibleCount: Int,
+    val totalCount: Int,
     val unreadCount: Int,
+    val watchedCount: Int,
     val lastSyncAt: Long?,
     val hasSyncError: Boolean
 )

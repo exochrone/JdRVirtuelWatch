@@ -3,6 +3,8 @@ package com.jdrvirtuel.watcher.feature.settings
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -71,6 +73,20 @@ fun SettingsScreen(
     var showClearDataDialog by remember { mutableStateOf(false) }
     var showClearLogDialog by remember { mutableStateOf(false) }
     var showClearNotificationLogDialog by remember { mutableStateOf(false) }
+    var showImportConfirmationDialog by remember { mutableStateOf<SettingsEffect.ShowImportConfirmation?>(null) }
+    var showImportResultDialog by remember { mutableStateOf<SettingsEffect.ShowImportResult?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { viewModel.onEvent(SettingsEvent.OnFileToExportSelected(it)) }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.onEvent(SettingsEvent.OnFileToImportSelected(it)) }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -86,6 +102,18 @@ fun SettingsScreen(
                 }
                 is SettingsEffect.ShowMessage -> {
                     snackbarHostState.showSnackbar(effect.message)
+                }
+                is SettingsEffect.LaunchExportPicker -> {
+                    exportLauncher.launch(effect.fileName)
+                }
+                SettingsEffect.LaunchImportPicker -> {
+                    importLauncher.launch(arrayOf("application/json"))
+                }
+                is SettingsEffect.ShowImportConfirmation -> {
+                    showImportConfirmationDialog = effect
+                }
+                is SettingsEffect.ShowImportResult -> {
+                    showImportResultDialog = effect
                 }
             }
         }
@@ -117,14 +145,72 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(Dimens.md)
             ) {
-                // Section Surveillance
+                // 1. Section Données
+                SettingsSectionTitle(stringResource(R.string.settings_section_data))
+                Text(
+                    text = stringResource(R.string.settings_stored_topics_count, uiState.storedTopicsCount),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(Dimens.sm))
+
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { viewModel.onEvent(SettingsEvent.OnExportClick) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.settings_data_export))
+                    }
+                    Spacer(modifier = Modifier.width(Dimens.sm))
+                    OutlinedButton(
+                        onClick = { viewModel.onEvent(SettingsEvent.OnImportClick) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.settings_data_import))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Dimens.sm))
+
+                Button(
+                    onClick = { showClearDataDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(modifier = Modifier.width(Dimens.sm))
+                    Text(stringResource(R.string.settings_clear_data))
+                }
+
+                SyncLogSection(
+                    logs = uiState.syncLogs,
+                    onClearLog = { showClearLogDialog = true },
+                    onExportLog = { viewModel.onEvent(SettingsEvent.OnExportSyncLog) }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
+
+                // 2. Section Surveillance
                 SettingsSectionTitle(stringResource(R.string.settings_section_watch))
                 uiState.forums.forEach { forum ->
                     Column(modifier = Modifier.padding(vertical = Dimens.sm)) {
-                        Text(text = forum.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                        Text(text = forum.url, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
-                            text = stringResource(R.string.debug_last_sync, DateFormatter.formatRelative(forum.lastSyncAt)),
+                            text = forum.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = forum.url,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.debug_last_sync,
+                                DateFormatter.formatRelative(forum.lastSyncAt)
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -138,7 +224,7 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
 
-                // Section Notifications
+                // 3. Section Notifications
                 SettingsSectionTitle(stringResource(R.string.settings_section_notifications))
                 Button(
                     onClick = { viewModel.onEvent(SettingsEvent.OnManageNotifications) },
@@ -161,7 +247,7 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
 
-                // Section Navigation
+                // 4. Section Navigation
                 SettingsSectionTitle(stringResource(R.string.settings_section_navigation))
                 BrowserSelector(
                     availableBrowsers = uiState.availableBrowsers,
@@ -171,38 +257,7 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
 
-                // Section Données
-                SettingsSectionTitle(stringResource(R.string.settings_section_data))
-                Text(
-                    text = stringResource(R.string.settings_stored_topics_count, uiState.storedTopicsCount),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(Dimens.sm))
-                Button(
-                    onClick = { showClearDataDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(modifier = Modifier.width(Dimens.sm))
-                    Text(stringResource(R.string.settings_clear_data))
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
-
-                // Section Journal
-                SyncLogSection(
-                    logs = uiState.syncLogs,
-                    onClearLog = { showClearLogDialog = true },
-                    onExportLog = { viewModel.onEvent(SettingsEvent.OnExportSyncLog) }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
-
-                // Section Diagnostic
+                // 5. Section Diagnostic
                 SettingsSectionTitle(stringResource(R.string.settings_section_diagnostic))
                 OutlinedButton(
                     onClick = { viewModel.onEvent(SettingsEvent.OnDiagnosticClick) },
@@ -218,7 +273,7 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.md))
 
-                // Section À propos
+                // 6. Section À propos
                 SettingsSectionTitle(stringResource(R.string.settings_section_about))
                 Text(
                     text = stringResource(R.string.settings_about_app_name, uiState.appVersion),
@@ -308,6 +363,57 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showClearNotificationLogDialog = false }) {
                     Text(stringResource(R.string.debug_cancel))
+                }
+            }
+        )
+    }
+
+    showImportConfirmationDialog?.let { data ->
+        AlertDialog(
+            onDismissRequest = { showImportConfirmationDialog = null },
+            title = { Text(stringResource(R.string.settings_import_confirm_title)) },
+            text = { 
+                Text(stringResource(
+                    R.string.settings_import_confirm_message,
+                    data.topicCount,
+                    data.forumCount,
+                    data.date
+                )) 
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.onEvent(SettingsEvent.OnConfirmImport)
+                        showImportConfirmationDialog = null
+                    }
+                ) {
+                    Text(stringResource(R.string.debug_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportConfirmationDialog = null }) {
+                    Text(stringResource(R.string.debug_cancel))
+                }
+            }
+        )
+    }
+
+    showImportResultDialog?.let { result ->
+        AlertDialog(
+            onDismissRequest = { showImportResultDialog = null },
+            title = { Text(stringResource(R.string.settings_import_result_title)) },
+            text = {
+                Text(stringResource(
+                    R.string.settings_import_result_message,
+                    result.restored,
+                    result.inserted,
+                    result.ignored,
+                    result.intact
+                ))
+            },
+            confirmButton = {
+                TextButton(onClick = { showImportResultDialog = null }) {
+                    Text(stringResource(R.string.debug_confirm))
                 }
             }
         )

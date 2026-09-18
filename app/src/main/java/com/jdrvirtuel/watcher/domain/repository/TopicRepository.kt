@@ -15,6 +15,8 @@ interface TopicRepository {
     suspend fun deleteStale(forumId: Int, threshold: Long): Int
     fun observeUnreadCount(forumId: Int): Flow<Int>
     fun observeTopicCount(forumId: Int): Flow<Int>
+    fun observeVisibleCount(forumId: Int): Flow<Int>
+    fun observeWatchedCount(forumId: Int): Flow<Int>
 
     // For debug
     suspend fun deleteAll()

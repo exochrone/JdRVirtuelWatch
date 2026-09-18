@@ -46,4 +46,10 @@ interface TopicDao {
 
     @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId")
     fun observeTopicCount(forumId: Int): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId AND isHidden = 0")
+    fun observeVisibleCount(forumId: Int): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId AND isWatched = 1")
+    fun observeWatchedCount(forumId: Int): Flow<Int>
 }

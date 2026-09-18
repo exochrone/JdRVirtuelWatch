@@ -64,11 +64,35 @@ fun ForumCard(
 
             Text(
                 text = pluralStringResource(
-                    R.plurals.home_topics_count,
-                    forum.topicCount,
-                    forum.topicCount
+                    R.plurals.home_subjects_ratio,
+                    forum.totalCount,
+                    forum.visibleCount,
+                    forum.totalCount
                 ),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+
+            if (forum.unreadCount > 0) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.home_new_count,
+                        forum.unreadCount,
+                        forum.unreadCount
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            Text(
+                text = pluralStringResource(
+                    R.plurals.home_watched_count,
+                    forum.watchedCount,
+                    forum.watchedCount
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
             )
 
             val syncLabel = if (forum.lastSyncAt == null) {

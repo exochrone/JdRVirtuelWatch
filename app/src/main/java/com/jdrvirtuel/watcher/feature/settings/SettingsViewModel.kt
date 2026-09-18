@@ -9,12 +9,16 @@ import com.jdrvirtuel.watcher.core.util.BrowserLauncher
 import com.jdrvirtuel.watcher.core.util.DateFormatter
 import com.jdrvirtuel.watcher.core.util.LogExporter
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
+import com.jdrvirtuel.watcher.domain.model.BackupData
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.NotificationType
 import com.jdrvirtuel.watcher.domain.model.SyncSource
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
+import com.jdrvirtuel.watcher.domain.repository.BackupRepository
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
+import com.jdrvirtuel.watcher.domain.usecase.ExportBackupUseCase
+import com.jdrvirtuel.watcher.domain.usecase.ImportBackupUseCase
 import com.jdrvirtuel.watcher.notification.NotificationLog
 import com.jdrvirtuel.watcher.work.SyncLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +32,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -36,6 +43,9 @@ class SettingsViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val appPreferences: AppPreferences,
+    private val backupRepository: BackupRepository,
+    private val exportBackupUseCase: ExportBackupUseCase,
+    private val importBackupUseCase: ImportBackupUseCase,
     private val syncLog: SyncLog,
     private val notificationLog: NotificationLog,
     private val logExporter: LogExporter
@@ -43,6 +53,7 @@ class SettingsViewModel @Inject constructor(
 
     private val browserLauncher = BrowserLauncher(context, appPreferences, viewModelScope)
     private val _refreshTrigger = MutableStateFlow(0)
+    private var pendingBackupData: BackupData? = null
 
     private val commonInfoFlow = combine(
         forumRepository.observeForums(),
@@ -137,6 +148,67 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.OnDiagnosticClick -> viewModelScope.launch {
                 appPreferences.setDiagnosticDismissed(false)
                 _effect.send(SettingsEffect.NavigateToDiagnostic)
+            }
+            SettingsEvent.OnExportClick -> {
+                val dateStr = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())
+                val fileName = "jdrvirtuelwatcher-$dateStr.json"
+                viewModelScope.launch { _effect.send(SettingsEffect.LaunchExportPicker(fileName)) }
+            }
+            is SettingsEvent.OnFileToExportSelected -> viewModelScope.launch {
+                try {
+                    val backupData = exportBackupUseCase()
+                    val json = backupRepository.serialize(backupData)
+                    context.contentResolver.openOutputStream(event.uri)?.use { 
+                        it.write(json.toByteArray())
+                    }
+                    _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_export_success, backupData.forums.sumOf { it.topics.size })))
+                } catch (e: Exception) {
+                    _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_export_error)))
+                }
+            }
+            SettingsEvent.OnImportClick -> viewModelScope.launch {
+                _effect.send(SettingsEffect.LaunchImportPicker)
+            }
+            is SettingsEvent.OnFileToImportSelected -> viewModelScope.launch {
+                try {
+                    val json = context.contentResolver.openInputStream(event.uri)?.use { 
+                        it.bufferedReader().readText()
+                    } ?: throw Exception("Empty file")
+                    
+                    val backupData = backupRepository.deserialize(json)
+                    if (backupData == null) {
+                        _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_import_error_invalid)))
+                        return@launch
+                    }
+                    
+                    if (backupData.formatVersion > 1) {
+                        _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_import_error_version, backupData.formatVersion)))
+                        return@launch
+                    }
+                    
+                    pendingBackupData = backupData
+                    val date = DateFormatter.formatRelative(backupData.exportedAt)
+                    val totalTopics = backupData.forums.sumOf { it.topics.size }
+                    _effect.send(SettingsEffect.ShowImportConfirmation(totalTopics, backupData.forums.size, date))
+                } catch (e: Exception) {
+                    _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_import_error_invalid)))
+                }
+            }
+            SettingsEvent.OnConfirmImport -> viewModelScope.launch {
+                val data = pendingBackupData ?: return@launch
+                pendingBackupData = null
+                try {
+                    val result = importBackupUseCase(data)
+                    _refreshTrigger.value++
+                    _effect.send(SettingsEffect.ShowImportResult(
+                        restored = result.restoredCount,
+                        inserted = result.insertedCount,
+                        ignored = result.ignoredCount,
+                        intact = result.intactCount
+                    ))
+                } catch (e: Exception) {
+                    _effect.send(SettingsEffect.ShowMessage(context.getString(R.string.settings_import_error_generic)))
+                }
             }
         }
     }

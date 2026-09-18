@@ -106,6 +106,18 @@
         <item quantity="one">1 sujet</item>
         <item quantity="other">%1$d sujets</item>
     </plurals>
+    <plurals name="home_subjects_ratio">
+        <item quantity="one">Sujet : %1$d/%2$d</item>
+        <item quantity="other">Sujets : %1$d/%2$d</item>
+    </plurals>
+    <plurals name="home_new_count">
+        <item quantity="one">1 nouveau</item>
+        <item quantity="other">%1$d nouveaux</item>
+    </plurals>
+    <plurals name="home_watched_count">
+        <item quantity="one">Suivi : 1</item>
+        <item quantity="other">Suivis : %1$d</item>
+    </plurals>
     <string name="home_sync_error">Dernière synchronisation en échec</string>
     <string name="home_sync_success_no_news">Aucune nouveauté</string>
     <string name="home_sync_success_news_singular">1 nouveau sujet</string>
@@ -141,12 +153,12 @@
     </plurals>
     <string name="forum_detail_topic_masked">Sujet masqué</string>
     <string name="forum_detail_undo">Annuler</string>
-    <string name="forum_detail_watch_enabled">Surveillance activée</string>
-    <string name="forum_detail_watch_disabled">Surveillance désactivée</string>
+    <string name="forum_detail_watch_enabled">Suivi activé</string>
+    <string name="forum_detail_watch_disabled">Suivi désactivé</string>
     <string name="forum_detail_state_visible">Sujet visible</string>
     <string name="forum_detail_state_hidden">Sujet masqué</string>
-    <string name="forum_detail_state_watched">Sujet surveillé</string>
-    <string name="forum_detail_state_not_watched">Sujet non surveillé</string>
+    <string name="forum_detail_state_watched">Sujet suivi</string>
+    <string name="forum_detail_state_not_watched">Sujet non suivi</string>
     <string name="forum_detail_menu_refresh">Rafraîchir la liste</string>
     <string name="forum_detail_menu_hide_full">Masquer les COMPLET</string>
     <string name="forum_detail_hide_full_no_topics">Aucune partie complète à masquer</string>
@@ -165,7 +177,7 @@
     <string name="notification_channel_new_topics">Nouveaux sujets</string>
     <string name="notification_channel_new_topics_desc">Avertit quand une nouvelle proposition de partie est publiée.</string>
     <string name="notification_channel_new_replies">Nouvelles réponses</string>
-    <string name="notification_channel_new_replies_desc">Avertit quand une réponse est publiée sur un sujet surveillé.</string>
+    <string name="notification_channel_new_replies_desc">Avertit quand une réponse est publiée sur un sujet suivi.</string>
     <string name="notification_channel_verification">Vérification requise</string>
     <string name="notification_channel_verification_desc">Avertit quand l\'accès au forum est bloqué par Cloudflare.</string>
     <string name="notification_new_reply_body">Nouvelle réponse : %1$s</string>
@@ -178,13 +190,24 @@
 
     <!-- Settings -->
     <string name="settings_title">Réglages</string>
-    <string name="settings_section_watch">Surveillance</string>
+    <string name="settings_section_watch">Suivi</string>
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_manage_notifications">Gérer les notifications</string>
     <string name="settings_section_navigation">Navigation</string>
     <string name="settings_browser_selector_label">Navigateur pour les sujets</string>
     <string name="settings_browser_system_default">Choix du système</string>
     <string name="settings_section_data">Données</string>
+    <string name="settings_data_export">Exporter les données</string>
+    <string name="settings_data_import">Importer des données</string>
+    <string name="settings_export_success">%1$d sujets exportés</string>
+    <string name="settings_export_error">Erreur lors de l\'export</string>
+    <string name="settings_import_confirm_title">Confirmer l\'import ?</string>
+    <string name="settings_import_confirm_message">Le fichier contient %1$d sujets issus de %2$d forums (exporté le %3$s).\n\nLes nouveaux sujets seront insérés et vos états (lu/suivi/masqué) seront restaurés sur les sujets existants.</string>
+    <string name="settings_import_result_title">Import terminé</string>
+    <string name="settings_import_result_message">États restaurés : %1$d\nNouveaux sujets : %2$d\nIgnorés (forum inconnu) : %3$d\nLaissés intacts : %4$d</string>
+    <string name="settings_import_error_invalid">Fichier invalide ou corrompu</string>
+    <string name="settings_import_error_version">Version de format non supportée (%1$d)</string>
+    <string name="settings_import_error_generic">Erreur lors de l\'import</string>
     <string name="settings_stored_topics_count">Sujets stockés : %1$d</string>
     <string name="settings_clear_data">Effacer les données locales</string>
     <string name="settings_clear_data_confirm_title">Effacer les données ?</string>

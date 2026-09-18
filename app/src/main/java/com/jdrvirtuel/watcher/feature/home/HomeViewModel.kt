@@ -49,14 +49,18 @@ class HomeViewModel @Inject constructor(
             } else {
                 val forumUiModelsFlows = forums.map { forum ->
                     combine(
+                        topicRepository.observeVisibleCount(forum.id),
                         topicRepository.observeTopicCount(forum.id),
-                        topicRepository.observeUnreadCount(forum.id)
-                    ) { topicCount, unreadCount ->
+                        topicRepository.observeUnreadCount(forum.id),
+                        topicRepository.observeWatchedCount(forum.id)
+                    ) { visibleCount, totalCount, unreadCount, watchedCount ->
                         ForumUiModel(
                             id = forum.id,
                             name = forum.name,
-                            topicCount = topicCount,
+                            visibleCount = visibleCount,
+                            totalCount = totalCount,
                             unreadCount = unreadCount,
+                            watchedCount = watchedCount,
                             lastSyncAt = forum.lastSyncAt,
                             hasSyncError = !forum.lastSyncSuccess
                         )

@@ -33,6 +33,11 @@ sealed interface SettingsEvent {
     data object OnManageNotifications : SettingsEvent
     data object OnDebugClick : SettingsEvent
     data object OnDiagnosticClick : SettingsEvent
+    data object OnExportClick : SettingsEvent
+    data class OnFileToExportSelected(val uri: android.net.Uri) : SettingsEvent
+    data object OnImportClick : SettingsEvent
+    data class OnFileToImportSelected(val uri: android.net.Uri) : SettingsEvent
+    data object OnConfirmImport : SettingsEvent
 }
 
 sealed interface SettingsEffect {
@@ -41,4 +46,8 @@ sealed interface SettingsEffect {
     data object NavigateToDiagnostic : SettingsEffect
     data object OpenNotificationSettings : SettingsEffect
     data class ShowMessage(val message: String) : SettingsEffect
+    data class LaunchExportPicker(val fileName: String) : SettingsEffect
+    data object LaunchImportPicker : SettingsEffect
+    data class ShowImportConfirmation(val topicCount: Int, val forumCount: Int, val date: String) : SettingsEffect
+    data class ShowImportResult(val restored: Int, val inserted: Int, val ignored: Int, val intact: Int) : SettingsEffect
 }
