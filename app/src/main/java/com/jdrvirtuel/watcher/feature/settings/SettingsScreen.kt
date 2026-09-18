@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -226,6 +227,30 @@ fun SettingsScreen(
 
                 // 3. Section Notifications
                 SettingsSectionTitle(stringResource(R.string.settings_section_notifications))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_status_notification),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_status_notification_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = uiState.statusNotificationEnabled,
+                        onCheckedChange = { viewModel.onEvent(SettingsEvent.OnStatusNotificationToggle(it)) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(Dimens.md))
+
                 Button(
                     onClick = { viewModel.onEvent(SettingsEvent.OnManageNotifications) },
                     modifier = Modifier.fillMaxWidth(),

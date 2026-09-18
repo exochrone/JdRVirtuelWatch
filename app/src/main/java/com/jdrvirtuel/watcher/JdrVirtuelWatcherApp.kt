@@ -6,6 +6,7 @@ import androidx.work.Configuration
 import com.jdrvirtuel.watcher.core.di.ApplicationScope
 import com.jdrvirtuel.watcher.data.local.db.DatabaseSeeder
 import com.jdrvirtuel.watcher.notification.NotificationChannels
+import com.jdrvirtuel.watcher.notification.StatusNotifier
 import com.jdrvirtuel.watcher.work.SyncScheduler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +28,9 @@ class JdrVirtuelWatcherApp : Application(), Configuration.Provider {
     @Inject
     lateinit var syncScheduler: SyncScheduler
 
+    @Inject
+    lateinit var statusNotifier: StatusNotifier
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -37,6 +41,7 @@ class JdrVirtuelWatcherApp : Application(), Configuration.Provider {
         NotificationChannels.create(this)
         applicationScope.launch {
             databaseSeeder.seedIfEmpty()
+            statusNotifier.update()
         }
         syncScheduler.schedulePeriodicSync()
     }

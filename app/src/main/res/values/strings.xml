@@ -180,6 +180,8 @@
     <string name="notification_channel_new_replies_desc">Avertit quand une réponse est publiée sur un sujet suivi.</string>
     <string name="notification_channel_verification">Vérification requise</string>
     <string name="notification_channel_verification_desc">Avertit quand l\'accès au forum est bloqué par Cloudflare.</string>
+    <string name="notification_channel_status">Statut de la surveillance</string>
+    <string name="notification_channel_status_desc">Affiche en permanence l\'heure de la dernière synchronisation réussie.</string>
     <string name="notification_new_reply_body">Nouvelle réponse : %1$s</string>
     <plurals name="notification_summary_more">
         <item quantity="one">%1$d nouveauté</item>
@@ -187,12 +189,22 @@
     </plurals>
     <string name="notification_permission_title">Notifications désactivées</string>
     <string name="notification_permission_enable">Activer</string>
+    <string name="notification_status_active">Surveillance active</string>
+    <string name="notification_status_error">Dernière synchronisation en échec</string>
+    <string name="notification_status_last_success">Dernière synchronisation à %1$s</string>
+    <string name="notification_status_last_success_failed">Dernier succès à %1$s</string>
+    <string name="notification_status_never">Aucune synchronisation effectuée</string>
+    <string name="notification_status_sync">Synchroniser</string>
+    <string name="notification_status_open">Ouvrir</string>
+    <string name="notification_status_cloudflare_text">Appuyez sur Ouvrir pour débloquer l\'accès</string>
 
     <!-- Settings -->
     <string name="settings_title">Réglages</string>
     <string name="settings_section_watch">Suivi</string>
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_manage_notifications">Gérer les notifications</string>
+    <string name="settings_status_notification">Notification permanente de statut</string>
+    <string name="settings_status_notification_desc">Affiche en continu l\'heure de la dernière synchronisation, avec un accès rapide.</string>
     <string name="settings_section_navigation">Navigation</string>
     <string name="settings_browser_selector_label">Navigateur pour les sujets</string>
     <string name="settings_browser_system_default">Choix du système</string>

@@ -11,6 +11,7 @@ import com.jdrvirtuel.watcher.domain.repository.ChallengeStateRepository
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
+import com.jdrvirtuel.watcher.notification.StatusNotifier
 import com.jdrvirtuel.watcher.work.SyncLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -33,6 +34,7 @@ class HomeViewModel @Inject constructor(
     private val topicRepository: TopicRepository,
     private val syncAllForumsUseCase: SyncAllForumsUseCase,
     private val challengeRepository: ChallengeStateRepository,
+    private val statusNotifier: StatusNotifier,
     private val syncLog: SyncLog,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -108,6 +110,7 @@ class HomeViewModel @Inject constructor(
             try {
                 val outcomes = syncAllForumsUseCase()
                 syncLog.addEntry(SyncSource.MANUAL, outcomes)
+                statusNotifier.update()
                 handleSyncOutcomes(outcomes)
             } catch (e: Exception) {
                 _effects.send(HomeEffect.ShowMessage(context.getString(R.string.home_sync_unexpected_error)))

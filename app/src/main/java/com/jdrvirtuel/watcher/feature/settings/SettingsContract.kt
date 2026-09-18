@@ -12,6 +12,7 @@ data class SettingsUiState(
     val preferredBrowserPackage: String? = null,
     val availableBrowsers: List<BrowserPackageInfo> = emptyList(),
     val storedTopicsCount: Int = 0,
+    val statusNotificationEnabled: Boolean = true,
     val syncLogs: List<SyncLogEntry> = emptyList(),
     val notificationLogs: List<NotificationLogEntry> = emptyList(),
     val appVersion: String = ""
@@ -38,6 +39,7 @@ sealed interface SettingsEvent {
     data object OnImportClick : SettingsEvent
     data class OnFileToImportSelected(val uri: android.net.Uri) : SettingsEvent
     data object OnConfirmImport : SettingsEvent
+    data class OnStatusNotificationToggle(val enabled: Boolean) : SettingsEvent
 }
 
 sealed interface SettingsEffect {

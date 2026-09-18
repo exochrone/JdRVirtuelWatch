@@ -10,4 +10,6 @@ object NotificationIds {
     fun forGroupSummary(forumId: Int): Int = forumId
 
     fun getGroupKey(forumId: Int): String = "group_forum_$forumId"
+
+    const val STATUS = 13
 }

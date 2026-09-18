@@ -15,6 +15,7 @@ import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncForumUseCase
 import com.jdrvirtuel.watcher.navigation.ForumDetailRoute
+import com.jdrvirtuel.watcher.notification.StatusNotifier
 import com.jdrvirtuel.watcher.work.SyncLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,6 +37,7 @@ class ForumDetailViewModel @Inject constructor(
     private val topicRepository: TopicRepository,
     private val syncForumUseCase: SyncForumUseCase,
     private val syncLog: SyncLog,
+    private val statusNotifier: StatusNotifier,
     val appPreferences: AppPreferences,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -195,6 +197,7 @@ class ForumDetailViewModel @Inject constructor(
             try {
                 val outcome = syncForumUseCase(forumId)
                 syncLog.addEntry(SyncSource.MANUAL, listOf(outcome))
+                statusNotifier.update()
                 val message = when (outcome.status) {
                     SyncStatus.SUCCESS -> {
                         if (outcome.newTopics.isEmpty()) context.getString(R.string.home_sync_success_no_news)

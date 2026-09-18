@@ -19,6 +19,7 @@ import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.domain.usecase.ExportBackupUseCase
 import com.jdrvirtuel.watcher.domain.usecase.ImportBackupUseCase
+import com.jdrvirtuel.watcher.notification.StatusNotifier
 import com.jdrvirtuel.watcher.notification.NotificationLog
 import com.jdrvirtuel.watcher.work.SyncLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,6 +47,7 @@ class SettingsViewModel @Inject constructor(
     private val backupRepository: BackupRepository,
     private val exportBackupUseCase: ExportBackupUseCase,
     private val importBackupUseCase: ImportBackupUseCase,
+    private val statusNotifier: StatusNotifier,
     private val syncLog: SyncLog,
     private val notificationLog: NotificationLog,
     private val logExporter: LogExporter
@@ -58,10 +60,18 @@ class SettingsViewModel @Inject constructor(
     private val commonInfoFlow = combine(
         forumRepository.observeForums(),
         appPreferences.consecutiveChallengeFailures,
-        appPreferences.preferredBrowserPackage
-    ) { forums, failures, preferredBrowser ->
-        Triple(forums, failures, preferredBrowser)
+        appPreferences.preferredBrowserPackage,
+        appPreferences.isStatusNotificationEnabled
+    ) { forums, failures, preferredBrowser, statusEnabled ->
+        DataInfo(forums, failures, preferredBrowser, statusEnabled)
     }
+
+    private data class DataInfo(
+        val forums: List<Forum>,
+        val failures: Int,
+        val preferredBrowser: String?,
+        val statusEnabled: Boolean
+    )
 
     private val dataInfoFlow = combine(
         topicRepository.observeTotalCount(),
@@ -76,7 +86,10 @@ class SettingsViewModel @Inject constructor(
         commonInfoFlow,
         dataInfoFlow
     ) { common, totalTopics ->
-        val (forums, failures, preferredBrowser) = common
+        val forums = common.forums
+        val failures = common.failures
+        val preferredBrowser = common.preferredBrowser
+        val statusEnabled = common.statusEnabled
         
         val browsers = browserLauncher.listCustomTabsBrowsers().map {
             BrowserPackageInfo(it.packageName, it.label)
@@ -92,6 +105,7 @@ class SettingsViewModel @Inject constructor(
             preferredBrowserPackage = preferredBrowser,
             availableBrowsers = browsers,
             storedTopicsCount = totalTopics,
+            statusNotificationEnabled = statusEnabled,
             syncLogs = syncLogs,
             notificationLogs = notificationLogs,
             appVersion = BuildConfig.VERSION_NAME
@@ -148,6 +162,14 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.OnDiagnosticClick -> viewModelScope.launch {
                 appPreferences.setDiagnosticDismissed(false)
                 _effect.send(SettingsEffect.NavigateToDiagnostic)
+            }
+            is SettingsEvent.OnStatusNotificationToggle -> viewModelScope.launch {
+                appPreferences.setStatusNotificationEnabled(event.enabled)
+                if (event.enabled) {
+                    statusNotifier.update()
+                } else {
+                    statusNotifier.cancel()
+                }
             }
             SettingsEvent.OnExportClick -> {
                 val dateStr = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())

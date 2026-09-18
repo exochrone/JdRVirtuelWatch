@@ -29,6 +29,7 @@ class AppPreferences @Inject constructor(
         private val SIMULATE_CHALLENGE = booleanPreferencesKey("simulate_challenge")
         private val MANUFACTURER_SLEEP_ACKNOWLEDGED = booleanPreferencesKey("manufacturer_sleep_acknowledged")
         private val DIAGNOSTIC_DISMISSED = booleanPreferencesKey("diagnostic_dismissed")
+        private val STATUS_NOTIFICATION_ENABLED = booleanPreferencesKey("status_notification_enabled")
     }
 
     val consecutiveChallengeFailures: Flow<Int> = dataStore.data
@@ -143,6 +144,15 @@ class AppPreferences @Inject constructor(
     suspend fun setDiagnosticDismissed(dismissed: Boolean) {
         dataStore.edit { preferences ->
             preferences[DIAGNOSTIC_DISMISSED] = dismissed
+        }
+    }
+
+    val isStatusNotificationEnabled: Flow<Boolean> = dataStore.data
+        .map { preferences -> preferences[STATUS_NOTIFICATION_ENABLED] ?: true }
+
+    suspend fun setStatusNotificationEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[STATUS_NOTIFICATION_ENABLED] = enabled
         }
     }
 }

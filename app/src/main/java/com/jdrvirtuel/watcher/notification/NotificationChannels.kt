@@ -10,6 +10,7 @@ object NotificationChannels {
     const val NEW_TOPICS = "new_topics"
     const val NEW_REPLIES = "new_replies"
     const val VERIFICATION = "verification"
+    const val STATUS = "status"
 
     fun create(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -37,6 +38,13 @@ object NotificationChannels {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = context.getString(R.string.notification_channel_verification_desc)
+            },
+            NotificationChannel(
+                STATUS,
+                context.getString(R.string.notification_channel_status),
+                NotificationManager.IMPORTANCE_MIN
+            ).apply {
+                description = context.getString(R.string.notification_channel_status_desc)
             }
         )
 

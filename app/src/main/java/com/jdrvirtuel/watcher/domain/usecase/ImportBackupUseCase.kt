@@ -17,6 +17,7 @@ class ImportBackupUseCase @Inject constructor(
             throw IllegalArgumentException("Unsupported backup format version: ${data.formatVersion}")
         }
 
+        val totalBefore = topicRepository.observeTotalCount().first()
         val existingForums = forumRepository.observeForums().first().map { it.id }.toSet()
         
         var restoredCount = 0
@@ -77,27 +78,11 @@ class ImportBackupUseCase @Inject constructor(
             }
         }
 
-        val allLocalTopicsAfter = forumRepository.observeForums().first().sumOf { 
-            topicRepository.getTopics(it.id).size 
-        }
-        
-        // Estimation of intact count: all local topics - (restored + inserted)
-        // Actually restored are those updated. 
-        // Intact count = topics in base before that were NOT updated.
-        val totalLocalTopicsBefore = forumRepository.observeForums().first().sumOf { 
-            localTopicsCount(it.id) 
-        }
-        
-        // Simplification for the result:
         return BackupResult(
             restoredCount = restoredCount,
             insertedCount = insertedCount,
             ignoredCount = ignoredCount,
-            intactCount = totalLocalTopicsBefore - restoredCount
+            intactCount = totalBefore - restoredCount
         )
-    }
-
-    private suspend fun localTopicsCount(forumId: Int): Int {
-        return topicRepository.getTopics(forumId).size
     }
 }

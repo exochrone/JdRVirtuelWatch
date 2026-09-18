@@ -12,6 +12,7 @@ import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.usecase.SyncAllForumsUseCase
 import com.jdrvirtuel.watcher.domain.repository.ChallengeStateRepository
 import com.jdrvirtuel.watcher.notification.AppNotifier
+import com.jdrvirtuel.watcher.notification.StatusNotifier
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
@@ -26,6 +27,7 @@ class SyncWorker @AssistedInject constructor(
     private val appPreferences: AppPreferences,
     private val challengeRepository: ChallengeStateRepository,
     private val appNotifier: AppNotifier,
+    private val statusNotifier: StatusNotifier,
     private val testModeLog: TestModeLog,
     private val syncLog: SyncLog,
     private val syncSchedulerProvider: Provider<SyncScheduler>
@@ -61,6 +63,8 @@ class SyncWorker @AssistedInject constructor(
                 syncSchedulerProvider.get().reschedulePeriodicSync(isLongPeriod = false)
             }
 
+            statusNotifier.update()
+
             when {
                 anySuccess -> Result.success()
                 anyChallenge -> Result.success()
@@ -73,6 +77,8 @@ class SyncWorker @AssistedInject constructor(
                 SyncOutcome(forumId = forum.id, status = SyncStatus.ERROR, errorMessage = e.message)
             }
             syncLog.addEntry(source, errorOutcomes)
+            
+            statusNotifier.update()
             
             if (source == SyncSource.TEST && appPreferences.isTestModeEnabled.first()) {
                 syncSchedulerProvider.get().scheduleNextTestRun()
