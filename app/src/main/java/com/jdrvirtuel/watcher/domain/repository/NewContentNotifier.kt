@@ -5,5 +5,6 @@ import com.jdrvirtuel.watcher.domain.model.Topic
 
 interface NewContentNotifier {
     suspend fun notifyNewTopics(forum: Forum, topics: List<Topic>)
-    suspend fun notifyNewReplies(forum: Forum, topics: List<Topic>)
+    suspend fun notifyNewReplies(forum: Forum, topics: List<Pair<Topic, Int>>)
+    suspend fun clearHighlights()
 }

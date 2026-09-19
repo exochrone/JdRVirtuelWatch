@@ -62,17 +62,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        val data = intent?.data ?: return
-        if (data.scheme == "jdrvirtuel" && data.host == "topic") {
-            val topicId = data.lastPathSegment?.toIntOrNull() ?: return
-            lifecycleScope.launch {
-                val topic = topicRepository.getTopicById(topicId)
-                
-                if (topic != null) {
-                    topicRepository.setRead(topicId, true)
-                    browserLauncher.openUrl(topic.url)
-                }
-            }
-        }
+        // Deep link handling removed as per Module 14: unique notification opens Home.
     }
 }

@@ -30,6 +30,8 @@ class AppPreferences @Inject constructor(
         private val MANUFACTURER_SLEEP_ACKNOWLEDGED = booleanPreferencesKey("manufacturer_sleep_acknowledged")
         private val DIAGNOSTIC_DISMISSED = booleanPreferencesKey("diagnostic_dismissed")
         private val STATUS_NOTIFICATION_ENABLED = booleanPreferencesKey("status_notification_enabled")
+        private val LAST_SYNC_HIGHLIGHTS = stringPreferencesKey("last_sync_highlights")
+        private val NOTIFICATIONS_MIGRATED = booleanPreferencesKey("notifications_migrated")
     }
 
     val consecutiveChallengeFailures: Flow<Int> = dataStore.data
@@ -153,6 +155,28 @@ class AppPreferences @Inject constructor(
     suspend fun setStatusNotificationEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[STATUS_NOTIFICATION_ENABLED] = enabled
+        }
+    }
+
+    val lastSyncHighlights: Flow<String?> = dataStore.data
+        .map { preferences -> preferences[LAST_SYNC_HIGHLIGHTS] }
+
+    suspend fun setLastSyncHighlights(json: String?) {
+        dataStore.edit { preferences ->
+            if (json == null) {
+                preferences.remove(LAST_SYNC_HIGHLIGHTS)
+            } else {
+                preferences[LAST_SYNC_HIGHLIGHTS] = json
+            }
+        }
+    }
+
+    val isNotificationsMigrated: Flow<Boolean> = dataStore.data
+        .map { preferences -> preferences[NOTIFICATIONS_MIGRATED] ?: false }
+
+    suspend fun setNotificationsMigrated(migrated: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_MIGRATED] = migrated
         }
     }
 }

@@ -189,22 +189,29 @@
     </plurals>
     <string name="notification_permission_title">Notifications désactivées</string>
     <string name="notification_permission_enable">Activer</string>
-    <string name="notification_status_active">Surveillance active</string>
-    <string name="notification_status_error">Dernière synchronisation en échec</string>
-    <string name="notification_status_last_success">Dernière synchronisation à %1$s</string>
+    <string name="notification_status_active">Dernière synchro %1$s</string>
+    <string name="notification_status_active_full">Dernière synchro %1$s à %2$s</string>
+    <string name="notification_status_error_title">Échec de synchronisation</string>
+    <string name="notification_status_last_success">Dernière synchro %1$s</string>
     <string name="notification_status_last_success_failed">Dernier succès à %1$s</string>
     <string name="notification_status_never">Aucune synchronisation effectuée</string>
     <string name="notification_status_sync">Synchroniser</string>
     <string name="notification_status_open">Ouvrir</string>
     <string name="notification_status_cloudflare_text">Appuyez sur Ouvrir pour débloquer l\'accès</string>
+    <string name="notification_status_repos">%1$s (%2$d) - %3$s (%4$d)</string>
+    <string name="notification_status_new_topics_single">%1$s (%2$d) : %3$s</string>
+    <string name="notification_status_new_topics_multiple">%1$s (%2$d) : %3$d nouveaux sujets</string>
+    <string name="notification_status_new_replies">%1$d réponses à %2$s</string>
+    <string name="notification_status_new_reply">1 réponse à %1$s</string>
+    <string name="notification_status_others">et %1$d autres</string>
 
     <!-- Settings -->
     <string name="settings_title">Réglages</string>
     <string name="settings_section_watch">Suivi</string>
     <string name="settings_section_notifications">Notifications</string>
     <string name="settings_manage_notifications">Gérer les notifications</string>
-    <string name="settings_status_notification">Notification permanente de statut</string>
-    <string name="settings_status_notification_desc">Affiche en continu l\'heure de la dernière synchronisation, avec un accès rapide.</string>
+    <string name="settings_status_notification">Notifications</string>
+    <string name="settings_status_notification_desc">Affiche une notification permanente indiquant l\'état de la surveillance et les nouveautés détectées. La désactiver supprime toute alerte.</string>
     <string name="settings_section_navigation">Navigation</string>
     <string name="settings_browser_selector_label">Navigateur pour les sujets</string>
     <string name="settings_browser_system_default">Choix du système</string>

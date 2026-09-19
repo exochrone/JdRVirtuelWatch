@@ -26,9 +26,12 @@ class SyncForumUseCase @Inject constructor(
         }
     }
 
-    suspend operator fun invoke(forumId: Int): SyncOutcome = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(forumId: Int, clearHighlights: Boolean = true): SyncOutcome = withContext(Dispatchers.IO) {
         val mutex = getMutex(forumId)
         mutex.withLock {
+            if (clearHighlights) {
+                notifier.clearHighlights()
+            }
             val forum = forumRepository.getForum(forumId) ?: return@withContext SyncOutcome(
                 forumId = forumId,
                 status = SyncStatus.ERROR,
@@ -57,7 +60,7 @@ class SyncForumUseCase @Inject constructor(
                     val now = System.currentTimeMillis()
                     val existingTopics = topicRepository.getTopics(forumId).associateBy { it.id }
                     val newTopics = mutableListOf<Topic>()
-                    val newReplies = mutableListOf<Topic>()
+                    val newReplies = mutableListOf<kotlin.Pair<Topic, Int>>()
                     val topicsToUpsert = mutableListOf<Topic>()
 
                     for (parsed in parseResult.topics) {
@@ -98,8 +101,9 @@ class SyncForumUseCase @Inject constructor(
                             )
 
                             if (parsed.replyCount > existing.replyCount && existing.isWatched) {
+                                val diff = parsed.replyCount - existing.replyCount
                                 updatedTopic = updatedTopic.copy(isRead = false)
-                                newReplies.add(updatedTopic)
+                                newReplies.add(kotlin.Pair(updatedTopic, diff))
                             }
                             topicsToUpsert.add(updatedTopic)
                         }
@@ -128,7 +132,7 @@ class SyncForumUseCase @Inject constructor(
                         forumId = forumId,
                         status = SyncStatus.SUCCESS,
                         newTopics = newTopics,
-                        newReplies = newReplies,
+                        newReplies = newReplies.map { it.first },
                         parsedCount = parseResult.topics.size,
                         insertedCount = topicsToUpsert.count { it.id !in existingTopics },
                         updatedCount = topicsToUpsert.count { it.id in existingTopics },

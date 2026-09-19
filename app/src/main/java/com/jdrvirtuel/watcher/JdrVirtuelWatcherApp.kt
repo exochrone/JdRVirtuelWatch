@@ -10,6 +10,7 @@ import com.jdrvirtuel.watcher.notification.StatusNotifier
 import com.jdrvirtuel.watcher.work.SyncScheduler
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,6 +32,9 @@ class JdrVirtuelWatcherApp : Application(), Configuration.Provider {
     @Inject
     lateinit var statusNotifier: StatusNotifier
 
+    @Inject
+    lateinit var appPreferences: com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -38,8 +42,16 @@ class JdrVirtuelWatcherApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        NotificationChannels.create(this)
+        
         applicationScope.launch {
+            // One-time notification purge after update
+            if (!appPreferences.isNotificationsMigrated.first()) {
+                val notificationManager = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
+                notificationManager.cancelAll()
+                appPreferences.setNotificationsMigrated(true)
+            }
+            
+            NotificationChannels.create(this@JdrVirtuelWatcherApp)
             databaseSeeder.seedIfEmpty()
             statusNotifier.update()
         }

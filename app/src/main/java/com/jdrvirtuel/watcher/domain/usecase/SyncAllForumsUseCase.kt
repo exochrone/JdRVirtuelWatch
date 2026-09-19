@@ -7,14 +7,16 @@ import javax.inject.Singleton
 
 @Singleton
 class SyncAllForumsUseCase @Inject constructor(
-    private val syncForumUseCase: SyncForumUseCase
+    private val syncForumUseCase: SyncForumUseCase,
+    private val notifier: com.jdrvirtuel.watcher.domain.repository.NewContentNotifier
 ) {
     suspend operator fun invoke(): List<SyncOutcome> {
+        notifier.clearHighlights()
         val outcomes = mutableListOf<SyncOutcome>()
         // Synchronise les forums l'un après l'autre (15 puis 16)
-        outcomes.add(syncForumUseCase(15))
+        outcomes.add(syncForumUseCase(15, clearHighlights = false))
         delay(3000)
-        outcomes.add(syncForumUseCase(16))
+        outcomes.add(syncForumUseCase(16, clearHighlights = false))
         return outcomes
     }
 }

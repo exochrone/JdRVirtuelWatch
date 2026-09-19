@@ -8,11 +8,7 @@ import javax.inject.Singleton
 
 @Singleton
 class NoOpNewContentNotifier @Inject constructor() : NewContentNotifier {
-    override suspend fun notifyNewTopics(forum: Forum, topics: List<Topic>) {
-        // No-op
-    }
-
-    override suspend fun notifyNewReplies(forum: Forum, topics: List<Topic>) {
-        // No-op
-    }
+    override suspend fun notifyNewTopics(forum: Forum, topics: List<Topic>) {}
+    override suspend fun notifyNewReplies(forum: Forum, topics: List<Pair<Topic, Int>>) {}
+    override suspend fun clearHighlights() {}
 }
