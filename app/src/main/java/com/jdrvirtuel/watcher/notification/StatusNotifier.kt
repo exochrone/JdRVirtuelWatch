@@ -7,7 +7,6 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.jdrvirtuel.watcher.MainActivity
 import com.jdrvirtuel.watcher.R
-import com.jdrvirtuel.watcher.core.util.DateFormatter
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.Forum
 import com.jdrvirtuel.watcher.domain.model.SyncHighlights
@@ -46,21 +45,9 @@ class StatusNotifier @Inject constructor(
         val anyChallenge = challengeRepository.consecutiveFailures.first() >= 1
 
         val title = when {
-            anyChallenge -> context.getString(R.string.verification_title)
+            anyChallenge -> context.getString(R.string.verification_required)
             allFailed -> context.getString(R.string.notification_status_error_title)
-            lastSuccess != null -> {
-                val now = System.currentTimeMillis()
-                val timeStr = DateFormatter.formatStatusTime(lastSuccess)
-                if (now - lastSuccess > 24 * 60 * 60 * 1000) {
-                    if (timeStr.contains(" à ")) {
-                        context.getString(R.string.notification_status_last_success, timeStr)
-                    } else {
-                        context.getString(R.string.notification_status_active, timeStr)
-                    }
-                } else {
-                    context.getString(R.string.notification_status_active, timeStr)
-                }
-            }
+            lastSuccess != null -> context.getString(R.string.notification_status_active)
             else -> context.getString(R.string.notification_status_never)
         }
 
@@ -156,6 +143,8 @@ class StatusNotifier @Inject constructor(
             .setContentTitle(title)
             .setContentText(text)
             .setOngoing(true)
+            .setWhen(lastSuccess ?: 0L)
+            .setShowWhen(lastSuccess != null)
             .setOnlyAlertOnce(!hasNovelty && !anyChallenge && !allFailed)
             .setContentIntent(openPendingIntent)
             .addAction(

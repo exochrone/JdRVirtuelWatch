@@ -56,21 +56,4 @@ object DateFormatter {
         val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
         return logFormatter.format(dateTime)
     }
-
-    private val timeOnlyFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
-    private val dayAndTimeFormatter = DateTimeFormatter.ofPattern("dd/MM 'à' HH:mm", Locale.getDefault())
-
-    fun formatStatusTime(timestamp: Long): String {
-        val instant = Instant.ofEpochMilli(timestamp)
-        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-        val now = LocalDateTime.now(ZoneId.systemDefault())
-        
-        val isRecent = ChronoUnit.HOURS.between(dateTime, now) < 24
-        
-        return if (isRecent) {
-            timeOnlyFormatter.format(dateTime)
-        } else {
-            dayAndTimeFormatter.format(dateTime)
-        }
-    }
 }

@@ -189,9 +189,9 @@
     </plurals>
     <string name="notification_permission_title">Notifications désactivées</string>
     <string name="notification_permission_enable">Activer</string>
-    <string name="notification_status_active">Dernière synchro %1$s</string>
+    <string name="notification_status_active">Dernière synchro</string>
     <string name="notification_status_active_full">Dernière synchro %1$s à %2$s</string>
-    <string name="notification_status_error_title">Échec de synchronisation</string>
+    <string name="notification_status_error_title">Échec de synchro</string>
     <string name="notification_status_last_success">Dernière synchro %1$s</string>
     <string name="notification_status_last_success_failed">Dernier succès à %1$s</string>
     <string name="notification_status_never">Aucune synchronisation effectuée</string>
