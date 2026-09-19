@@ -11,6 +11,7 @@ import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.core.util.DateFormatter
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.SyncStatus
+import com.jdrvirtuel.watcher.domain.repository.ChallengeStateRepository
 import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -21,7 +22,8 @@ import javax.inject.Singleton
 class StatusNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
     private val forumRepository: ForumRepository,
-    private val appPreferences: AppPreferences
+    private val appPreferences: AppPreferences,
+    private val challengeRepository: ChallengeStateRepository
 ) {
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -36,8 +38,9 @@ class StatusNotifier @Inject constructor(
         if (forums.isEmpty()) return
 
         val lastSuccess = forums.mapNotNull { it.lastSyncAt }.maxOrNull()
-        val allFailed = forums.isNotEmpty() && forums.all { !it.lastSyncSuccess && it.lastSyncAt != null }
-        val anyChallenge = forums.any { it.lastSyncError == "CHALLENGE_REQUIRED" } // Or use a proper status if available in Forum model
+        val anyAttempt = forums.any { it.lastSyncAt != null || it.lastSyncError != null }
+        val allFailed = anyAttempt && forums.all { !it.lastSyncSuccess }
+        val anyChallenge = challengeRepository.consecutiveFailures.first() >= 1
 
         val title = when {
             anyChallenge -> context.getString(R.string.verification_title)
@@ -84,12 +87,12 @@ class StatusNotifier @Inject constructor(
             .setSilent(true)
             .setContentIntent(openPendingIntent)
             .addAction(
-                R.drawable.ic_launcher_foreground, // Replace with appropriate sync icon if available
+                R.drawable.ic_sync,
                 context.getString(R.string.notification_status_sync),
                 syncPendingIntent
             )
             .addAction(
-                R.drawable.ic_launcher_foreground, // Replace with appropriate open icon if available
+                R.drawable.ic_open,
                 context.getString(R.string.notification_status_open),
                 openPendingIntent
             )
