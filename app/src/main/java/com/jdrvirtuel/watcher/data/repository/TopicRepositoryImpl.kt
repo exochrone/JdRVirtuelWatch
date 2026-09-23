@@ -32,10 +32,6 @@ class TopicRepositoryImpl @Inject constructor(
         topicDao.updateHidden(id, hidden)
     }
 
-    override suspend fun setWatched(id: Int, watched: Boolean) {
-        topicDao.updateWatched(id, watched)
-    }
-
     override suspend fun setRead(id: Int, read: Boolean) {
         topicDao.updateRead(id, read)
     }
@@ -56,9 +52,6 @@ class TopicRepositoryImpl @Inject constructor(
 
     override fun observeVisibleCount(forumId: Int): Flow<Int> =
         topicDao.observeVisibleCount(forumId)
-
-    override fun observeWatchedCount(forumId: Int): Flow<Int> =
-        topicDao.observeWatchedCount(forumId)
 
     override suspend fun deleteAll() {
         topicDao.deleteAll()

@@ -32,7 +32,7 @@ class ExportBackupUseCase @Inject constructor(
                         lastPostAt = topic.lastPostAt,
                         isFull = topic.isFull,
                         isHidden = topic.isHidden,
-                        isWatched = topic.isWatched,
+                        isWatched = false,
                         isRead = topic.isRead,
                         firstSeenAt = topic.firstSeenAt,
                         lastSeenAt = topic.lastSeenAt

@@ -247,7 +247,6 @@ fun TopicSelector(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
         if (selectedTopic != null) {
             Column(modifier = Modifier.padding(top = Dimens.sm)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Dimens.xs)) {
-                    FlagText("Surveillé", selectedTopic.isWatched)
                     FlagText("Masqué", selectedTopic.isHidden)
                     FlagText("Lu", selectedTopic.isRead)
                     FlagText("Complet", selectedTopic.isFull)
@@ -259,7 +258,6 @@ fun TopicSelector(uiState: DebugUiState, onEvent: (DebugEvent) -> Unit) {
                     maxItemsInEachRow = 2,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.xs)
                 ) {
-                    Button(onClick = { onEvent(DebugEvent.ToggleWatched) }, modifier = Modifier.weight(1f)) { Text("Basc. surveillé") }
                     Button(onClick = { onEvent(DebugEvent.ToggleHidden) }, modifier = Modifier.weight(1f)) { Text("Basc. masqué") }
                     Button(onClick = { onEvent(DebugEvent.ToggleRead) }, modifier = Modifier.weight(1f)) { Text("Basc. lu") }
                     Button(onClick = { onEvent(DebugEvent.DecrementReplyCount) }, modifier = Modifier.weight(1f)) { Text("Déc. réponses") }
@@ -469,7 +467,6 @@ fun TopicDebugItem(topic: Topic) {
         )
         val flags = mutableListOf<String>()
         if (topic.isFull) flags.add("Complet")
-        if (topic.isWatched) flags.add("Surveillé")
         if (topic.isHidden) flags.add("Masqué")
         if (!topic.isRead) flags.add("Non lu")
 

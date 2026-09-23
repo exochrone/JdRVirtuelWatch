@@ -40,7 +40,7 @@ class ImportBackupUseCase @Inject constructor(
                     // Restore user states only
                     val updatedTopic = localTopic.copy(
                         isHidden = backupTopic.isHidden,
-                        isWatched = if (backupTopic.isHidden) false else backupTopic.isWatched,
+                        isWatched = false,
                         isRead = backupTopic.isRead,
                         firstSeenAt = backupTopic.firstSeenAt
                     )
@@ -63,7 +63,7 @@ class ImportBackupUseCase @Inject constructor(
                             lastPostAt = backupTopic.lastPostAt,
                             isFull = backupTopic.isFull,
                             isHidden = backupTopic.isHidden,
-                            isWatched = if (backupTopic.isHidden) false else backupTopic.isWatched,
+                            isWatched = false,
                             isRead = backupTopic.isRead,
                             firstSeenAt = backupTopic.firstSeenAt,
                             lastSeenAt = backupTopic.lastSeenAt

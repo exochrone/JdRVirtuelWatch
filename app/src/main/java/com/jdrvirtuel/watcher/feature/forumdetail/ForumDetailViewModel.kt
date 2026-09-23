@@ -62,14 +62,11 @@ class ForumDetailViewModel @Inject constructor(
         } else {
             val totalCount = topics.size
             val hiddenCount = topics.count { it.isHidden }
-            val fullTopicsToHide = topics.filter { it.isFull && !it.isHidden && !it.isWatched }.map { it.id }
+            val fullTopicsToHide = topics.filter { it.isFull && !it.isHidden }.map { it.id }
 
             val filteredTopics = topics
                 .filter { showHidden || !it.isHidden }
-                .sortedWith(
-                    compareByDescending<Topic> { it.isWatched }
-                        .thenByDescending { it.lastPostAt }
-                )
+                .sortedByDescending { it.lastPostAt }
                 .map { it.toUiModel() }
 
             val displayedCount = filteredTopics.size
@@ -103,8 +100,7 @@ class ForumDetailViewModel @Inject constructor(
         when (event) {
             is ForumDetailEvent.OnTopicClick -> openTopic(event.topic)
             is ForumDetailEvent.OnToggleHidden -> toggleHidden(event.topicId)
-            is ForumDetailEvent.OnToggleWatched -> toggleWatched(event.topicId)
-            is ForumDetailEvent.OnUndoHide -> undoHide(event.topicId, event.wasWatched)
+            is ForumDetailEvent.OnUndoHide -> undoHide(event.topicId)
             ForumDetailEvent.OnToggleShowHidden -> _showHidden.update { !it }
             ForumDetailEvent.OnHideAllFull -> {
                 if (uiState.value.fullTopicsToHide.isEmpty()) {
@@ -131,13 +127,11 @@ class ForumDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val topics = uiState.value.topics
             val topic = topics.find { it.id == topicId } ?: return@launch
-            val wasWatched = topic.isWatched
             
             if (!topic.isHidden) {
                 // Masquer
-                topicRepository.setWatched(topicId, false)
                 topicRepository.setHidden(topicId, true)
-                _effect.send(ForumDetailEffect.ShowUndoHide(topicId, wasWatched))
+                _effect.send(ForumDetailEffect.ShowUndoHide(topicId))
             } else {
                 // Réafficher
                 topicRepository.setHidden(topicId, false)
@@ -145,30 +139,9 @@ class ForumDetailViewModel @Inject constructor(
         }
     }
 
-    private fun toggleWatched(topicId: Int) {
-        viewModelScope.launch {
-            val topics = uiState.value.topics
-            val topic = topics.find { it.id == topicId } ?: return@launch
-            
-            if (!topic.isHidden) {
-                val newWatched = !topic.isWatched
-                topicRepository.setWatched(topicId, newWatched)
-                val message = if (newWatched) {
-                    context.getString(R.string.forum_detail_watch_enabled)
-                } else {
-                    context.getString(R.string.forum_detail_watch_disabled)
-                }
-                _effect.send(ForumDetailEffect.ShowMessage(message))
-            }
-        }
-    }
-
-    private fun undoHide(topicId: Int, wasWatched: Boolean) {
+    private fun undoHide(topicId: Int) {
         viewModelScope.launch {
             topicRepository.setHidden(topicId, false)
-            if (wasWatched) {
-                topicRepository.setWatched(topicId, true)
-            }
         }
     }
 
@@ -227,7 +200,6 @@ class ForumDetailViewModel @Inject constructor(
         lastPostAtLabel = DateFormatter.formatTopicDate(lastPostAt),
         isFull = isFull,
         isHidden = isHidden,
-        isWatched = isWatched,
         isRead = isRead
     )
 }

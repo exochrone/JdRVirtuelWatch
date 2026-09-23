@@ -201,8 +201,10 @@
     <string name="notification_status_repos">%1$s (%2$d) - %3$s (%4$d)</string>
     <string name="notification_status_new_topics_single">%1$s (%2$d) : %3$s</string>
     <string name="notification_status_new_topics_multiple">%1$s (%2$d) : %3$d nouveaux sujets</string>
-    <string name="notification_status_new_replies">%1$d réponses à %2$s</string>
-    <string name="notification_status_new_reply">1 réponse à %1$s</string>
+    <plurals name="notification_status_forum_replies">
+        <item quantity="one">%1$s : +1 réponse</item>
+        <item quantity="other">%1$s : +%2$d réponses</item>
+    </plurals>
     <string name="notification_status_others">et %1$d autres</string>
 
     <!-- Settings -->

@@ -5,13 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SyncHighlights(
     val newTopicsByForum: Map<String, List<String>> = emptyMap(),
-    val newRepliesByTopic: List<ReplyHighlight> = emptyList()
+    val newReplyCountByForum: Map<String, Int> = emptyMap()
 ) {
-    val isEmpty: Boolean get() = newTopicsByForum.isEmpty() && newRepliesByTopic.isEmpty()
+    val isEmpty: Boolean get() = newTopicsByForum.isEmpty() && newReplyCountByForum.isEmpty()
 }
-
-@Serializable
-data class ReplyHighlight(
-    val title: String,
-    val count: Int
-)

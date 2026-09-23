@@ -20,11 +20,8 @@ interface TopicDao {
     @Upsert
     suspend fun upsertAll(topics: List<TopicEntity>): List<Long>
 
-    @Query("UPDATE topics SET isHidden = :hidden, isWatched = CASE WHEN :hidden THEN 0 ELSE isWatched END WHERE id = :id")
+    @Query("UPDATE topics SET isHidden = :hidden WHERE id = :id")
     suspend fun updateHidden(id: Int, hidden: Boolean): Int
-
-    @Query("UPDATE topics SET isWatched = :watched WHERE id = :id")
-    suspend fun updateWatched(id: Int, watched: Boolean): Int
 
     @Query("UPDATE topics SET isRead = :read WHERE id = :id")
     suspend fun updateRead(id: Int, read: Boolean): Int
@@ -32,7 +29,7 @@ interface TopicDao {
     @Query("DELETE FROM topics WHERE id = :id")
     suspend fun deleteById(id: Int): Int
 
-    @Query("DELETE FROM topics WHERE forumId = :forumId AND lastSeenAt < :threshold AND isWatched = 0")
+    @Query("DELETE FROM topics WHERE forumId = :forumId AND lastSeenAt < :threshold")
     suspend fun deleteStale(forumId: Int, threshold: Long): Int
 
     @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId AND isRead = 0 AND isHidden = 0")
@@ -49,7 +46,4 @@ interface TopicDao {
 
     @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId AND isHidden = 0")
     fun observeVisibleCount(forumId: Int): Flow<Int>
-
-    @Query("SELECT COUNT(*) FROM topics WHERE forumId = :forumId AND isWatched = 1")
-    fun observeWatchedCount(forumId: Int): Flow<Int>
 }

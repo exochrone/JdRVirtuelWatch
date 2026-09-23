@@ -9,14 +9,12 @@ interface TopicRepository {
     suspend fun getTopicById(id: Int): Topic?
     suspend fun upsertAll(topics: List<Topic>)
     suspend fun setHidden(id: Int, hidden: Boolean)
-    suspend fun setWatched(id: Int, watched: Boolean)
     suspend fun setRead(id: Int, read: Boolean)
     suspend fun deleteById(id: Int)
     suspend fun deleteStale(forumId: Int, threshold: Long): Int
     fun observeUnreadCount(forumId: Int): Flow<Int>
     fun observeTopicCount(forumId: Int): Flow<Int>
     fun observeVisibleCount(forumId: Int): Flow<Int>
-    fun observeWatchedCount(forumId: Int): Flow<Int>
 
     // For debug
     suspend fun deleteAll()

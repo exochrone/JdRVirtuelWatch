@@ -100,10 +100,15 @@ class SyncForumUseCase @Inject constructor(
                                 lastSeenAt = now
                             )
 
-                            if (parsed.replyCount > existing.replyCount && existing.isWatched) {
+                            if (parsed.replyCount > existing.replyCount) {
                                 val diff = parsed.replyCount - existing.replyCount
-                                updatedTopic = updatedTopic.copy(isRead = false)
-                                newReplies.add(kotlin.Pair(updatedTopic, diff))
+                                updatedTopic = updatedTopic.copy(
+                                    isRead = false,
+                                    isHidden = false
+                                )
+                                if (forum.isBootstrapped) {
+                                    newReplies.add(kotlin.Pair(updatedTopic, diff))
+                                }
                             }
                             topicsToUpsert.add(updatedTopic)
                         }

@@ -2,7 +2,6 @@ package com.jdrvirtuel.watcher.notification
 
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
 import com.jdrvirtuel.watcher.domain.model.Forum
-import com.jdrvirtuel.watcher.domain.model.ReplyHighlight
 import com.jdrvirtuel.watcher.domain.model.SyncHighlights
 import com.jdrvirtuel.watcher.domain.model.Topic
 import com.jdrvirtuel.watcher.domain.repository.NewContentNotifier
@@ -35,21 +34,13 @@ class SystemNewContentNotifier @Inject constructor(
         appNotifier.notifyNewReplies(forum, topics.map { it.first })
         
         val currentHighlights = getCurrentHighlights()
-        val newReplies = currentHighlights.newRepliesByTopic.toMutableList()
+        val newReplyCounts = currentHighlights.newReplyCountByForum.toMutableMap()
+        val forumIdKey = forum.id.toString()
+        val totalDiff = topics.sumOf { it.second }
+        val existingCount = newReplyCounts[forumIdKey] ?: 0
+        newReplyCounts[forumIdKey] = existingCount + totalDiff
         
-        topics.forEach { pair ->
-            val topic = pair.first
-            val diff = pair.second
-            val existingIndex = newReplies.indexOfFirst { it.title == topic.title }
-            if (existingIndex != -1) {
-                val existing = newReplies[existingIndex]
-                newReplies[existingIndex] = existing.copy(count = existing.count + diff)
-            } else {
-                newReplies.add(ReplyHighlight(topic.title, diff))
-            }
-        }
-        
-        saveHighlights(currentHighlights.copy(newRepliesByTopic = newReplies))
+        saveHighlights(currentHighlights.copy(newReplyCountByForum = newReplyCounts))
     }
 
     override suspend fun clearHighlights() {

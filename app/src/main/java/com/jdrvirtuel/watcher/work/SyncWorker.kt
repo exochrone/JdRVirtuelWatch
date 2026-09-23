@@ -56,7 +56,7 @@ class SyncWorker @AssistedInject constructor(
             val allFailedNet = outcomes.all { it.status == SyncStatus.ERROR }
             val anyChallenge = outcomes.any { it.status == SyncStatus.CHALLENGE_REQUIRED }
             val anySuccess = outcomes.any { it.status == SyncStatus.SUCCESS }
-            val hasNovelty = outcomes.any { it.newTopics.isNotEmpty() || it.newReplies.isNotEmpty() }
+            val hasNewTopics = outcomes.any { it.newTopics.isNotEmpty() }
 
             if (anyChallenge) {
                 handleChallenge()
@@ -64,7 +64,7 @@ class SyncWorker @AssistedInject constructor(
                 syncSchedulerProvider.get().reschedulePeriodicSync(isLongPeriod = false)
             }
 
-            statusNotifier.update(hasNovelty = hasNovelty)
+            statusNotifier.update(hasNewTopics = hasNewTopics)
 
             when {
                 anySuccess -> Result.success()

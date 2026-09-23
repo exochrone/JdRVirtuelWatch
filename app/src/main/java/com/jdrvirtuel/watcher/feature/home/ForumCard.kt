@@ -85,16 +85,6 @@ fun ForumCard(
                 )
             }
 
-            Text(
-                text = pluralStringResource(
-                    R.plurals.home_watched_count,
-                    forum.watchedCount,
-                    forum.watchedCount
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.secondary
-            )
-
             val syncLabel = if (forum.lastSyncAt == null) {
                 stringResource(R.string.home_never_synced)
             } else {

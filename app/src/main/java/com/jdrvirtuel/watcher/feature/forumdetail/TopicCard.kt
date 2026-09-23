@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AssistChip
@@ -36,7 +34,6 @@ fun TopicCard(
     topic: TopicUiModel,
     onTopicClick: (TopicUiModel) -> Unit,
     onToggleHidden: (Int) -> Unit,
-    onToggleWatched: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isDimmed = topic.isFull || topic.isHidden
@@ -110,20 +107,6 @@ fun TopicCard(
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
-
-                    IconButton(
-                        onClick = { onToggleWatched(topic.id) },
-                        enabled = !topic.isHidden
-                    ) {
-                        Icon(
-                            imageVector = if (topic.isWatched) Icons.Filled.Notifications else Icons.Outlined.NotificationsOff,
-                            contentDescription = if (topic.isWatched) {
-                                stringResource(R.string.forum_detail_state_watched)
-                            } else {
-                                stringResource(R.string.forum_detail_state_not_watched)
-                            }
-                        )
-                    }
 
                     IconButton(
                         onClick = { onToggleHidden(topic.id) }

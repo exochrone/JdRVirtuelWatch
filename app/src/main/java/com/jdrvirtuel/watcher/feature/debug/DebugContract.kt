@@ -84,7 +84,6 @@ sealed interface DebugEvent {
     data object SyncAll : DebugEvent
     data object DeleteRandomTopic : DebugEvent
     data class SelectTopic(val topicId: Int?) : DebugEvent
-    data object ToggleWatched : DebugEvent
     data object ToggleHidden : DebugEvent
     data object ToggleRead : DebugEvent
     data object DecrementReplyCount : DebugEvent

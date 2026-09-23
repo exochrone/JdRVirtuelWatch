@@ -31,7 +31,7 @@ class StatusNotifier @Inject constructor(
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun update(hasNovelty: Boolean = false) {
+    suspend fun update(hasNewTopics: Boolean = false) {
         if (!appPreferences.isStatusNotificationEnabled.first()) {
             cancel()
             return
@@ -55,7 +55,7 @@ class StatusNotifier @Inject constructor(
         val text: String
         val bigText: String?
 
-        if ((highlights.isEmpty && !hasNovelty) || anyChallenge) {
+        if ((highlights.isEmpty && !hasNewTopics) || anyChallenge) {
             text = if (anyChallenge) {
                 context.getString(R.string.notification_status_cloudflare_text)
             } else {
@@ -74,28 +74,33 @@ class StatusNotifier @Inject constructor(
             bigText = null
         } else {
             val lines = mutableListOf<String>()
+            val sortedForums = forums.sortedBy { it.id }
             
-            // New topics
-            highlights.newTopicsByForum.forEach { entry ->
-                val forumId = entry.key
-                val titles = entry.value
-                val forum = forums.find { it.id.toString() == forumId }
-                val count = topicRepository.observeVisibleCount(forumId.toInt()).first()
-                val forumName = forum?.name ?: "Forum $forumId"
+            for (forum in sortedForums) {
+                val forumIdKey = forum.id.toString()
                 
-                if (titles.size == 1) {
-                    lines.add(context.getString(R.string.notification_status_new_topics_single, forumName, count, titles.first()))
-                } else if (titles.size > 1) {
-                    lines.add(context.getString(R.string.notification_status_new_topics_multiple, forumName, count, titles.size.toLong()))
+                // 1. New topics line for this forum
+                val topicsList = highlights.newTopicsByForum[forumIdKey]
+                if (!topicsList.isNullOrEmpty()) {
+                    val count = topicRepository.observeVisibleCount(forum.id).first()
+                    if (topicsList.size == 1) {
+                        lines.add(context.getString(R.string.notification_status_new_topics_single, forum.name, count, topicsList.first()))
+                    } else {
+                        lines.add(context.getString(R.string.notification_status_new_topics_multiple, forum.name, count, topicsList.size.toLong()))
+                    }
                 }
-            }
-            
-            // New replies
-            highlights.newRepliesByTopic.forEach { reply ->
-                if (reply.count == 1) {
-                    lines.add(context.getString(R.string.notification_status_new_reply, reply.title))
-                } else {
-                    lines.add(context.getString(R.string.notification_status_new_replies, reply.count.toLong(), reply.title))
+                
+                // 2. New replies line for this forum
+                val replyCount = highlights.newReplyCountByForum[forumIdKey] ?: 0
+                if (replyCount > 0) {
+                    lines.add(
+                        context.resources.getQuantityString(
+                            R.plurals.notification_status_forum_replies,
+                            replyCount,
+                            forum.name,
+                            replyCount
+                        )
+                    )
                 }
             }
             
@@ -145,7 +150,7 @@ class StatusNotifier @Inject constructor(
             .setOngoing(true)
             .setWhen(lastSuccess ?: 0L)
             .setShowWhen(lastSuccess != null)
-            .setOnlyAlertOnce(!hasNovelty && !anyChallenge && !allFailed)
+            .setOnlyAlertOnce(!hasNewTopics && !anyChallenge && !allFailed)
             .setContentIntent(openPendingIntent)
             .addAction(
                 R.drawable.ic_sync,

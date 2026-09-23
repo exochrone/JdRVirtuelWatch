@@ -95,7 +95,7 @@ fun ForumDetailScreen(
                             duration = SnackbarDuration.Short
                         )
                         if (result == SnackbarResult.ActionPerformed) {
-                            viewModel.onEvent(ForumDetailEvent.OnUndoHide(effect.topicId, effect.wasWatched))
+                            viewModel.onEvent(ForumDetailEvent.OnUndoHide(effect.topicId))
                         }
                     }
                 }
@@ -262,8 +262,7 @@ fun ForumDetailScreen(
                             TopicCard(
                                 topic = topic,
                                 onTopicClick = { viewModel.onEvent(ForumDetailEvent.OnTopicClick(it)) },
-                                onToggleHidden = { viewModel.onEvent(ForumDetailEvent.OnToggleHidden(it)) },
-                                onToggleWatched = { viewModel.onEvent(ForumDetailEvent.OnToggleWatched(it)) }
+                                onToggleHidden = { viewModel.onEvent(ForumDetailEvent.OnToggleHidden(it)) }
                             )
                         }
                     }

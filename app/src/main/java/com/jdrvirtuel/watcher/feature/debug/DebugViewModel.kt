@@ -209,7 +209,6 @@ class DebugViewModel @Inject constructor(
             is DebugEvent.SelectTopic -> {
                 _syncState.update { it.copy(selectedTopicId = event.topicId) }
             }
-            DebugEvent.ToggleWatched -> toggleWatched()
             DebugEvent.ToggleHidden -> toggleHidden()
             DebugEvent.ToggleRead -> toggleRead()
             DebugEvent.DecrementReplyCount -> decrementReplyCount()
@@ -478,16 +477,6 @@ class DebugViewModel @Inject constructor(
                 topicRepository.deleteById(random.id)
                 _syncState.update { it.copy(lastDeletedTopicInfo = "${random.id} - ${random.title}") }
             }
-        }
-    }
-
-    private fun toggleWatched() {
-        viewModelScope.launch {
-            val id = _syncState.value.selectedTopicId ?: return@launch
-            val topics15 = topicRepository.getTopics(15)
-            val topics16 = topicRepository.getTopics(16)
-            val topic = (topics15 + topics16).find { it.id == id } ?: return@launch
-            topicRepository.setWatched(id, !topic.isWatched)
         }
     }
 
