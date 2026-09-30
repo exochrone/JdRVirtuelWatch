@@ -26,12 +26,9 @@ class SyncForumUseCase @Inject constructor(
         }
     }
 
-    suspend operator fun invoke(forumId: Int, clearHighlights: Boolean = true): SyncOutcome = withContext(Dispatchers.IO) {
+    suspend operator fun invoke(forumId: Int): SyncOutcome = withContext(Dispatchers.IO) {
         val mutex = getMutex(forumId)
         mutex.withLock {
-            if (clearHighlights) {
-                notifier.clearHighlights()
-            }
             val forum = forumRepository.getForum(forumId) ?: return@withContext SyncOutcome(
                 forumId = forumId,
                 status = SyncStatus.ERROR,

@@ -59,7 +59,11 @@ fun AppNavHost(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable<ForumDetailRoute> {
+        composable<ForumDetailRoute>(
+            deepLinks = listOf(
+                navDeepLink<ForumDetailRoute>(basePath = "jdrvirtuel://forum")
+            )
+        ) {
             val viewModel: ForumDetailViewModel = hiltViewModel()
             ForumDetailScreen(
                 viewModel = viewModel,

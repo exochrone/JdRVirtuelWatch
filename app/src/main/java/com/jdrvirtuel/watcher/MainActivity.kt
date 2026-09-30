@@ -6,15 +6,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.jdrvirtuel.watcher.core.ui.theme.JdrVirtuelWatcherTheme
 import com.jdrvirtuel.watcher.core.util.BrowserLauncher
 import com.jdrvirtuel.watcher.core.util.SystemSettingsChecker
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
+import com.jdrvirtuel.watcher.domain.repository.NewContentNotifier
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import com.jdrvirtuel.watcher.navigation.AppNavHost
 import com.jdrvirtuel.watcher.navigation.DiagnosticRoute
 import com.jdrvirtuel.watcher.navigation.HomeRoute
+import com.jdrvirtuel.watcher.notification.StatusNotifier
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,9 +29,17 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var appPreferences: AppPreferences
-    
+
     @Inject
     lateinit var systemSettingsChecker: SystemSettingsChecker
+
+    @Inject
+    lateinit var newContentNotifier: NewContentNotifier
+
+    @Inject
+    lateinit var statusNotifier: StatusNotifier
+
+    private var navController: NavHostController? = null
 
     private val browserLauncher by lazy {
         BrowserLauncher(this, appPreferences, lifecycleScope)
@@ -36,19 +47,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         lifecycleScope.launch {
             val shouldShowDiagnostic = systemSettingsChecker.shouldShowDiagnostic()
             val startDestination = if (shouldShowDiagnostic) DiagnosticRoute else HomeRoute
-            
+
             enableEdgeToEdge()
-            handleIntent(intent)
 
             setContent {
                 JdrVirtuelWatcherTheme {
-                    val navController = rememberNavController()
+                    val controller = rememberNavController().also { navController = it }
                     AppNavHost(
-                        navController = navController,
+                        navController = controller,
                         startDestination = startDestination
                     )
                 }
@@ -56,12 +66,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleIntent(intent)
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            newContentNotifier.clearHighlights()
+            statusNotifier.update()
+        }
     }
 
-    private fun handleIntent(intent: Intent?) {
-        // Deep link handling removed as per Module 14: unique notification opens Home.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        navController?.handleDeepLink(intent)
     }
 }

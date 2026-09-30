@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import com.jdrvirtuel.watcher.MainActivity
 import com.jdrvirtuel.watcher.R
 import com.jdrvirtuel.watcher.data.local.prefs.AppPreferences
@@ -15,6 +16,7 @@ import com.jdrvirtuel.watcher.domain.repository.ForumRepository
 import com.jdrvirtuel.watcher.domain.repository.TopicRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,7 +27,9 @@ class StatusNotifier @Inject constructor(
     private val forumRepository: ForumRepository,
     private val topicRepository: TopicRepository,
     private val appPreferences: AppPreferences,
-    private val challengeRepository: ChallengeStateRepository
+    private val challengeRepository: ChallengeStateRepository,
+    private val staleCheckScheduler: StaleCheckScheduler,
+    private val statusLevelResolver: StatusLevelResolver
 ) {
     private val notificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -37,102 +41,133 @@ class StatusNotifier @Inject constructor(
             return
         }
 
-        val forums: List<Forum> = forumRepository.observeForums().first()
+        val forums: List<Forum> = forumRepository.observeForums().first().sortedBy { it.id }
         if (forums.isEmpty()) return
 
-        val lastSuccess: Long? = forums.mapNotNull { f: Forum -> f.lastSyncAt }.maxOrNull()
-        val allFailed = forums.isNotEmpty() && forums.all { f: Forum -> f.lastSyncAt != null || f.lastSyncError != null } && forums.all { f: Forum -> !f.lastSyncSuccess }
-        val anyChallenge = challengeRepository.consecutiveFailures.first() >= 1
-
-        val title = when {
-            anyChallenge -> context.getString(R.string.verification_required)
-            allFailed -> context.getString(R.string.notification_status_error_title)
-            lastSuccess != null -> context.getString(R.string.notification_status_active)
-            else -> context.getString(R.string.notification_status_never)
+        val forumSyncStates = forums.map { forum ->
+            ForumSyncState(
+                lastSyncAt = forum.lastSyncAt,
+                lastSyncSuccess = forum.lastSyncSuccess,
+                lastSyncError = forum.lastSyncError
+            )
         }
 
         val highlights = getHighlights()
-        val text: String
-        val bigText: String?
+        var pendingNewCount = 0
+        for (forum in forums) {
+            val forumIdKey = forum.id.toString()
+            val topicCount = highlights.newTopicsByForum[forumIdKey]?.size ?: 0
+            val replyCount = highlights.newReplyCountByForum[forumIdKey] ?: 0
+            pendingNewCount += topicCount + replyCount
+        }
 
-        if ((highlights.isEmpty && !hasNewTopics) || anyChallenge) {
-            text = if (anyChallenge) {
-                context.getString(R.string.notification_status_cloudflare_text)
-            } else {
-                val oneshots = forums.find { it.id == 15 }
-                val campagnes = forums.find { it.id == 16 }
-                
-                val count15 = topicRepository.observeVisibleCount(15).first()
-                val count16 = topicRepository.observeVisibleCount(16).first()
-                
-                context.getString(
-                    R.string.notification_status_repos,
-                    oneshots?.name ?: "Oneshots", count15,
-                    campagnes?.name ?: "Campagnes", count16
-                )
-            }
-            bigText = null
-        } else {
-            val lines = mutableListOf<String>()
-            val sortedForums = forums.sortedBy { it.id }
-            
-            for (forum in sortedForums) {
-                val forumIdKey = forum.id.toString()
-                
-                // 1. New topics line for this forum
-                val topicsList = highlights.newTopicsByForum[forumIdKey]
-                if (!topicsList.isNullOrEmpty()) {
-                    val count = topicRepository.observeVisibleCount(forum.id).first()
-                    if (topicsList.size == 1) {
-                        lines.add(context.getString(R.string.notification_status_new_topics_single, forum.name, count, topicsList.first()))
-                    } else {
-                        lines.add(context.getString(R.string.notification_status_new_topics_multiple, forum.name, count, topicsList.size.toLong()))
-                    }
+        val challengeFailures = challengeRepository.consecutiveFailures.first()
+        val now = System.currentTimeMillis()
+
+        val decision = statusLevelResolver.resolve(
+            forums = forumSyncStates,
+            challengeFailures = challengeFailures,
+            pendingNewCount = pendingNewCount,
+            now = now
+        )
+
+        val lastSuccess: Long? = forums.mapNotNull { it.lastSyncAt }.maxOrNull()
+
+        val title = when (decision.level) {
+            StatusLevel.IDLE, StatusLevel.NEW -> {
+                if (lastSuccess != null) {
+                    context.getString(R.string.notification_status_active)
+                } else {
+                    context.getString(R.string.notification_status_never)
                 }
-                
-                // 2. New replies line for this forum
-                val replyCount = highlights.newReplyCountByForum[forumIdKey] ?: 0
-                if (replyCount > 0) {
-                    lines.add(
-                        context.resources.getQuantityString(
-                            R.plurals.notification_status_forum_replies,
-                            replyCount,
-                            forum.name,
-                            replyCount
-                        )
+            }
+            StatusLevel.ALERT -> {
+                when (decision.reason) {
+                    AlertReason.VERIFICATION -> context.getString(R.string.verification_required)
+                    AlertReason.SYNC_FAILED -> context.getString(R.string.notification_status_error_title)
+                    AlertReason.STALE -> context.getString(R.string.notification_status_stale_title)
+                    null -> context.getString(R.string.notification_status_error_title)
+                }
+            }
+        }
+
+        val separator = context.getString(R.string.notification_status_separator)
+        val lines = mutableListOf<String>()
+
+        for (forum in forums) {
+            val forumIdKey = forum.id.toString()
+            val visibleCount = topicRepository.observeVisibleCount(forum.id).first()
+            val baseLine = context.getString(R.string.notification_status_line, forum.name, visibleCount)
+            val lineBuilder = StringBuilder(baseLine)
+
+            val topicCount = highlights.newTopicsByForum[forumIdKey]?.size ?: 0
+            val replyCount = highlights.newReplyCountByForum[forumIdKey] ?: 0
+
+            if (topicCount > 0) {
+                lineBuilder.append(separator)
+                lineBuilder.append(
+                    context.resources.getQuantityString(
+                        R.plurals.notification_status_topics,
+                        topicCount,
+                        topicCount
                     )
-                }
-            }
-            
-            val totalLines = lines.size
-            if (totalLines > 0) {
-                val displayLines = lines.take(5).toMutableList()
-                if (totalLines > 5) {
-                    displayLines.add(context.getString(R.string.notification_status_others, (totalLines - 5).toLong()))
-                }
-                
-                text = displayLines.first()
-                bigText = if (displayLines.size > 1) displayLines.joinToString("\n") else null
-            } else {
-                val count15 = topicRepository.observeVisibleCount(15).first()
-                val count16 = topicRepository.observeVisibleCount(16).first()
-                text = context.getString(
-                    R.string.notification_status_repos,
-                    "Oneshots", count15,
-                    "Campagnes", count16
                 )
-                bigText = null
+            }
+
+            if (replyCount > 0) {
+                lineBuilder.append(separator)
+                lineBuilder.append(
+                    context.resources.getQuantityString(
+                        R.plurals.notification_status_replies,
+                        replyCount,
+                        replyCount
+                    )
+                )
+            }
+
+            lines.add(lineBuilder.toString())
+        }
+
+        val text = lines.firstOrNull() ?: ""
+        val bigText = lines.joinToString("\n")
+
+        val targetChannel = when (decision.level) {
+            StatusLevel.IDLE -> NotificationChannels.STATUS_IDLE
+            StatusLevel.NEW -> NotificationChannels.STATUS_NEW
+            StatusLevel.ALERT -> NotificationChannels.STATUS_ALERT
+        }
+
+        val currentSignature = when (decision.level) {
+            StatusLevel.IDLE -> "IDLE"
+            StatusLevel.NEW -> "NEW"
+            StatusLevel.ALERT -> "ALERT_${decision.reason?.name ?: "UNKNOWN"}"
+        }
+
+        val lastSignature = appPreferences.lastStatusSignature.first()
+
+        val channelChanged = lastSignature == null || getChannelForSignature(lastSignature) != targetChannel
+
+        val isSilent = when (decision.level) {
+            StatusLevel.IDLE -> true
+            StatusLevel.NEW -> !hasNewTopics
+            StatusLevel.ALERT -> {
+                val previousWasAlert = lastSignature != null && lastSignature.startsWith("ALERT")
+                if (!previousWasAlert) {
+                    false
+                } else {
+                    lastSignature == currentSignature
+                }
             }
         }
 
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val mainIntent = Intent(context, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
-        val openPendingIntent = PendingIntent.getActivity(
+        val mainPendingIntent = PendingIntent.getActivity(
             context,
             0,
-            openIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            mainIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val syncIntent = Intent(context, SyncActionReceiver::class.java)
@@ -140,34 +175,73 @@ class StatusNotifier @Inject constructor(
             context,
             1,
             syncIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val builder = NotificationCompat.Builder(context, NotificationChannels.STATUS)
+        val builder = NotificationCompat.Builder(context, targetChannel)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setOngoing(true)
-            .setWhen(lastSuccess ?: 0L)
-            .setShowWhen(lastSuccess != null)
-            .setOnlyAlertOnce(!hasNewTopics && !anyChallenge && !allFailed)
-            .setContentIntent(openPendingIntent)
+            .setContentIntent(mainPendingIntent)
+            .setSilent(isSilent)
             .addAction(
                 R.drawable.ic_sync,
                 context.getString(R.string.notification_status_sync),
                 syncPendingIntent
             )
-            .addAction(
-                R.drawable.ic_open,
-                context.getString(R.string.notification_status_open),
-                openPendingIntent
-            )
 
-        if (bigText != null) {
-            builder.setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+        for ((index, forum) in forums.withIndex()) {
+            val forumIntent = Intent(
+                Intent.ACTION_VIEW,
+                "jdrvirtuel://forum/${forum.id}".toUri(),
+                context,
+                MainActivity::class.java
+            ).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val forumPendingIntent = PendingIntent.getActivity(
+                context,
+                2 + index,
+                forumIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            builder.addAction(
+                R.drawable.ic_open,
+                forum.name,
+                forumPendingIntent
+            )
+        }
+
+        if (lastSuccess != null) {
+            builder.setWhen(lastSuccess)
+            builder.setShowWhen(true)
+        } else {
+            builder.setShowWhen(false)
+        }
+
+        if (channelChanged) {
+            notificationManager.cancel(NotificationIds.STATUS)
         }
 
         notificationManager.notify(NotificationIds.STATUS, builder.build())
+        appPreferences.setLastStatusSignature(currentSignature)
+
+        if (lastSuccess != null && (decision.level != StatusLevel.ALERT || decision.reason != AlertReason.STALE)) {
+            staleCheckScheduler.schedule(lastSuccess + StatusLevelResolver.STALE_THRESHOLD_MS)
+        } else {
+            staleCheckScheduler.cancel()
+        }
+    }
+
+    private fun getChannelForSignature(signature: String): String {
+        return when {
+            signature == "IDLE" -> NotificationChannels.STATUS_IDLE
+            signature == "NEW" -> NotificationChannels.STATUS_NEW
+            signature.startsWith("ALERT") -> NotificationChannels.STATUS_ALERT
+            else -> NotificationChannels.STATUS_IDLE
+        }
     }
 
     private suspend fun getHighlights(): SyncHighlights {
@@ -181,5 +255,6 @@ class StatusNotifier @Inject constructor(
 
     fun cancel() {
         notificationManager.cancel(NotificationIds.STATUS)
+        staleCheckScheduler.cancel()
     }
 }

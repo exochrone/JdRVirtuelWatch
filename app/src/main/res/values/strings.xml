@@ -174,38 +174,29 @@
     <string name="forum_detail_no_browser">Aucun navigateur disponible</string>
 
     <!-- Notifications -->
-    <string name="notification_channel_new_topics">Nouveaux sujets</string>
-    <string name="notification_channel_new_topics_desc">Avertit quand une nouvelle proposition de partie est publiée.</string>
-    <string name="notification_channel_new_replies">Nouvelles réponses</string>
-    <string name="notification_channel_new_replies_desc">Avertit quand une réponse est publiée sur un sujet suivi.</string>
-    <string name="notification_channel_verification">Vérification requise</string>
-    <string name="notification_channel_verification_desc">Avertit quand l\'accès au forum est bloqué par Cloudflare.</string>
-    <string name="notification_channel_status">Statut de la surveillance</string>
-    <string name="notification_channel_status_desc">Affiche en permanence l\'heure de la dernière synchronisation réussie.</string>
-    <string name="notification_new_reply_body">Nouvelle réponse : %1$s</string>
-    <plurals name="notification_summary_more">
-        <item quantity="one">%1$d nouveauté</item>
-        <item quantity="other">%1$d nouveautés</item>
-    </plurals>
+    <string name="notification_channel_status_idle">Surveillance : rien de nouveau</string>
+    <string name="notification_channel_status_idle_desc">Affiche la surveillance en cours quand aucune nouveauté n\'est en attente.</string>
+    <string name="notification_channel_status_new">Surveillance : nouveautés</string>
+    <string name="notification_channel_status_new_desc">Signale les nouveaux sujets et les nouvelles réponses.</string>
+    <string name="notification_channel_status_alert">Surveillance : problème</string>
+    <string name="notification_channel_status_alert_desc">Signale un échec de synchronisation, une vérification requise ou une surveillance interrompue.</string>
     <string name="notification_permission_title">Notifications désactivées</string>
     <string name="notification_permission_enable">Activer</string>
     <string name="notification_status_active">Dernière synchro</string>
-    <string name="notification_status_active_full">Dernière synchro %1$s à %2$s</string>
     <string name="notification_status_error_title">Échec de synchro</string>
-    <string name="notification_status_last_success">Dernière synchro %1$s</string>
-    <string name="notification_status_last_success_failed">Dernier succès à %1$s</string>
+    <string name="notification_status_stale_title">Pas de synchro depuis 1 h</string>
     <string name="notification_status_never">Aucune synchronisation effectuée</string>
     <string name="notification_status_sync">Synchroniser</string>
-    <string name="notification_status_open">Ouvrir</string>
-    <string name="notification_status_cloudflare_text">Appuyez sur Ouvrir pour débloquer l\'accès</string>
-    <string name="notification_status_repos">%1$s (%2$d) - %3$s (%4$d)</string>
-    <string name="notification_status_new_topics_single">%1$s (%2$d) : %3$s</string>
-    <string name="notification_status_new_topics_multiple">%1$s (%2$d) : %3$d nouveaux sujets</string>
-    <plurals name="notification_status_forum_replies">
-        <item quantity="one">%1$s : +1 réponse</item>
-        <item quantity="other">%1$s : +%2$d réponses</item>
+    <string name="notification_status_line">• %1$s %2$d</string>
+    <string name="notification_status_separator">" / "</string>
+    <plurals name="notification_status_topics">
+        <item quantity="one">+1 sujet</item>
+        <item quantity="other">+%1$d sujets</item>
     </plurals>
-    <string name="notification_status_others">et %1$d autres</string>
+    <plurals name="notification_status_replies">
+        <item quantity="one">+1 réponse</item>
+        <item quantity="other">+%1$d réponses</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="settings_title">Réglages</string>

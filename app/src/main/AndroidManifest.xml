@@ -51,6 +51,10 @@
             android:name=".notification.SyncActionReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".notification.StaleCheckReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

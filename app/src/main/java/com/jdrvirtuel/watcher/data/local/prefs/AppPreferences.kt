@@ -32,6 +32,7 @@ class AppPreferences @Inject constructor(
         private val STATUS_NOTIFICATION_ENABLED = booleanPreferencesKey("status_notification_enabled")
         private val LAST_SYNC_HIGHLIGHTS = stringPreferencesKey("last_sync_highlights")
         private val NOTIFICATIONS_MIGRATED = booleanPreferencesKey("notifications_migrated")
+        private val LAST_STATUS_SIGNATURE = stringPreferencesKey("last_status_signature")
     }
 
     val consecutiveChallengeFailures: Flow<Int> = dataStore.data
@@ -177,6 +178,19 @@ class AppPreferences @Inject constructor(
     suspend fun setNotificationsMigrated(migrated: Boolean) {
         dataStore.edit { preferences ->
             preferences[NOTIFICATIONS_MIGRATED] = migrated
+        }
+    }
+
+    val lastStatusSignature: Flow<String?> = dataStore.data
+        .map { preferences -> preferences[LAST_STATUS_SIGNATURE] }
+
+    suspend fun setLastStatusSignature(value: String?) {
+        dataStore.edit { preferences ->
+            if (value == null) {
+                preferences.remove(LAST_STATUS_SIGNATURE)
+            } else {
+                preferences[LAST_STATUS_SIGNATURE] = value
+            }
         }
     }
 }

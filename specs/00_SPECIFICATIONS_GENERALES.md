@@ -1,7 +1,7 @@
 # JdRVirtuelWatcher
 
-Version : 1.0
-Dernière mise à jour : 05/08/2026
+Version : 1.1
+Dernière mise à jour : 30/09/2026
 
 ## 1. Objectif de l'application
 
@@ -44,15 +44,17 @@ nouveauté n'est manquée.
 2. Écran de détail listant les sujets d'un forum : titre, auteur, date de création,
    nombre de réponses, auteur et date du dernier message.
 3. Masquage individuel des sujets, réversible, avec option d'affichage temporaire des
-   sujets masqués.
-4. Mise sous surveillance individuelle des sujets, qui conditionne les notifications
-   de nouvelles réponses.
-5. Ouverture d'un sujet dans le navigateur.
-6. Synchronisation automatique toutes les 15 minutes en arrière-plan.
-7. Notification à la publication d'un nouveau sujet.
-8. Notification à l'arrivée d'une réponse sur un sujet mis sous surveillance.
-9. Gestion du dispositif anti-robot Cloudflare, y compris le cas où une validation
+   sujets masqués. Une nouvelle réponse démasque le sujet.
+4. Ouverture d'un sujet dans le navigateur.
+5. Synchronisation automatique toutes les 15 minutes en arrière-plan.
+6. Une notification unique et permanente, qui indique l'heure de la dernière
+   synchronisation, le nombre de sujets visibles par forum et les nouveautés en
+   attente, et dont la priorité varie selon la situation (voir 1.7).
+7. Gestion du dispositif anti-robot Cloudflare, y compris le cas où une validation
    humaine est requise.
+
+La mise sous surveillance individuelle des sujets a existé jusqu'au module 14 et a été
+supprimée au module 15.
 
 ### 1.6 Hors périmètre de cette version
 
@@ -68,6 +70,27 @@ implémenter, même partiellement :
 - aucune traduction, l'interface est exclusivement en français ;
 - aucun widget d'écran d'accueil, aucune version Wear OS, aucune version tablette
   spécifique.
+
+### 1.7 Notification
+
+État en vigueur depuis le module 16. L'historique est retracé dans les modules 08, 13,
+14, 15 et 16.
+
+- Une seule notification, permanente, qui remplace toutes les notifications par sujet.
+- Titre : « Dernière synchro », avec l'heure de la dernière synchronisation réussie
+  affichée par le système, ou un titre d'alerte en cas de problème.
+- Corps : une ligne par forum, du type `• Oneshots 4 / +1 sujet / +2 réponses`.
+- Actions : « Synchroniser », et un accès direct à l'écran de détail de chaque forum.
+- Appui : ouvre l'écran d'accueil.
+- Les compteurs de nouveautés s'accumulent jusqu'à l'ouverture de l'application.
+
+| Niveau | Situation | Canal | Importance | Son |
+|---|---|---|---|---|
+| Repos | Aucune nouveauté en attente | `status_idle` | `IMPORTANCE_MIN` | Jamais |
+| Nouveauté | Nouveaux sujets ou réponses en attente | `status_new` | `IMPORTANCE_DEFAULT` | Nouveaux sujets uniquement |
+| Alerte | Vérification requise, échec, ou aucune synchro réussie depuis 1 h | `status_alert` | `IMPORTANCE_HIGH` | À l'entrée dans l'alerte |
+
+L'interrupteur « Notifications » des réglages supprime toute notification.
 
 ## 2. Consignes générales pour Gemini
 
@@ -292,7 +315,7 @@ initial de la base.
 | `lastPostAt` | Long | Date du dernier message, en millisecondes epoch |
 | `isFull` | Boolean | Sujet portant l'icône « Complet » |
 | `isHidden` | Boolean | Masqué par l'utilisateur, faux par défaut |
-| `isWatched` | Boolean | Sous surveillance, faux par défaut |
+| `isWatched` | Boolean | Obsolète depuis le module 15, conservé pour éviter une migration, jamais lu |
 | `isRead` | Boolean | Faux tant que l'utilisateur n'a pas ouvert le sujet |
 | `firstSeenAt` | Long | Première apparition dans la base |
 | `lastSeenAt` | Long | Dernière apparition sur la page du forum |
@@ -301,11 +324,11 @@ Un index est posé sur `forumId`.
 
 ### 4.3 Invariants
 
-- `isHidden` à vrai force `isWatched` à faux.
-- `isHidden`, `isWatched` et `isRead` ne sont jamais écrasés par une
-  synchronisation.
-- Un sujet dont `lastSeenAt` remonte à plus de 30 jours est supprimé, sauf s'il est
-  sous surveillance.
+- `isWatched` n'est plus utilisé par aucun code. L'export l'écrit à faux, l'import
+  l'ignore.
+- `isHidden` et `isRead` ne sont jamais écrasés par une synchronisation, à une
+  exception près : une nouvelle réponse passe `isRead` et `isHidden` à faux.
+- Un sujet dont `lastSeenAt` remonte à plus de 30 jours est supprimé.
 - Les sujets épinglés du forum ne sont jamais insérés en base.
 
 ### 4.4 Préférences
@@ -316,6 +339,19 @@ Stockées en DataStore Preferences, dans `AppPreferences` :
 |---|---|---|
 | `consecutive_challenge_failures` | Int | Compteur d'échecs Cloudflare consécutifs |
 | `last_challenge_prompt_at` | Long | Dernière alerte de vérification envoyée |
+| `preferred_browser_package` | String | Navigateur choisi pour ouvrir les sujets |
+| `test_mode_enabled` | Boolean | Mode test de la tâche de fond |
+| `test_mode_interval_minutes` | Int | Intervalle du mode test |
+| `test_mode_log` | String | Journal du mode test |
+| `sync_log` | String | Journal des synchronisations |
+| `notification_log` | String | Journal des notifications |
+| `simulate_challenge` | Boolean | Simulation d'un challenge Cloudflare, debug |
+| `manufacturer_sleep_acknowledged` | Boolean | Avertissement constructeur du diagnostic lu |
+| `diagnostic_dismissed` | Boolean | Écran de diagnostic au démarrage écarté |
+| `status_notification_enabled` | Boolean | Interrupteur « Notifications », vrai par défaut |
+| `last_sync_highlights` | String | Nouveautés en attente, JSON `SyncHighlights`, remis à zéro à l'ouverture de l'application |
+| `notifications_migrated` | Boolean | Purge unique des anciennes notifications effectuée |
+| `last_status_signature` | String | Dernier niveau publié par la notification, module 16 |
 
 ## 5. Charte UI
 
@@ -372,8 +408,6 @@ Bibliothèque `androidx.compose.material.icons`, jeu `Outlined` et `Filled`.
 |---|---|
 | Sujet visible | `Icons.Outlined.Visibility` |
 | Sujet masqué | `Icons.Outlined.VisibilityOff` |
-| Sujet non surveillé | `Icons.Outlined.NotificationsOff` |
-| Sujet surveillé | `Icons.Filled.Notifications` |
 | Masquer les sujets complets | `Icons.Outlined.PlaylistRemove` |
 | Menu de débordement | `Icons.Outlined.MoreVert` |
 | Rafraîchir | `Icons.Outlined.Refresh` |
@@ -419,6 +453,7 @@ L'utilisateur signale explicitement à Gemini le passage d'un module au suivant.
 | 13 | Notification de statut permanente | 12 |
 | 14 | Notification unique | 13 |
 | 15 | Suppression du suivi et mise en avant des réponses | 14 |
+| 16 | Priorité, format et actions de la notification unique | 15 |
 
 ### 6.3 Écran de debug
 
@@ -460,7 +495,8 @@ Jsoup est utilisé uniquement en mode hors ligne, via `Jsoup.parse(html)`.
 | Sujet épinglé | Sujet annoncé en tête de liste par le forum, jamais stocké |
 | Sujet complet | Sujet portant l'icône `Complet.png`, recrutement terminé |
 | Sujet masqué | Sujet que l'utilisateur a choisi de ne plus voir |
-| Sujet surveillé | Sujet dont les nouvelles réponses déclenchent une notification |
+| Sujet visible | Sujet non masqué, compté dans le nombre affiché par la notification |
+| Nouveauté en attente | Nouveau sujet ou nouvelle réponse détecté depuis la dernière ouverture de l'application |
 | Amorçage | Première synchronisation réussie d'un forum, silencieuse |
 | Challenge | Page de vérification anti robot renvoyée par Cloudflare |
 
@@ -473,10 +509,11 @@ L'application est terminée lorsque l'ensemble des conditions suivantes est réu
 3. `gradlew testDebugUnitTest` réussit.
 4. L'application se lance sur un appareil réel sous Android 8.0 ou supérieur.
 5. Une synchronisation manuelle depuis l'écran d'accueil remplit les deux forums.
-6. Le masquage, la surveillance et l'ouverture d'un sujet fonctionnent et survivent à
-   un redémarrage de l'application.
-7. Une notification de nouveau sujet est reçue après suppression manuelle d'un sujet
-   depuis l'écran de debug, suivie d'une synchronisation.
+6. Le masquage et l'ouverture d'un sujet fonctionnent et survivent à un redémarrage
+   de l'application.
+7. La notification unique signale un nouveau sujet, avec son, après suppression
+   manuelle d'un sujet depuis l'écran de debug suivie d'une synchronisation, et
+   revient au repos à l'ouverture de l'application.
 8. Le bandeau de vérification Cloudflare apparaît après invalidation du cookie depuis
    l'écran de debug, et la validation manuelle rétablit la synchronisation.
 9. Le bouton d'accès à l'écran de debug est absent d'une compilation `release`.
