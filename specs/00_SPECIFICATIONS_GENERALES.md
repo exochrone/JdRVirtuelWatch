@@ -415,6 +415,10 @@ L'utilisateur signale explicitement à Gemini le passage d'un module au suivant.
 | 09 | Vérification Cloudflare | 02, 08 |
 | 10 | Finitions | tous |
 | 11 | Diagnostic au démarrage | 10 |
+| 12 | Compteurs d'accueil et sauvegarde | 11 |
+| 13 | Notification de statut permanente | 12 |
+| 14 | Notification unique | 13 |
+| 15 | Suppression du suivi et mise en avant des réponses | 14 |
 
 ### 6.3 Écran de debug
 
